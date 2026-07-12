@@ -9,3 +9,8 @@ rev = "v4.28.0"
 [[lean_lib]]
 name = "RequestProject"
 globs = ["TypeDDecoupling", "TypeDDecouplingNash", "TypeDDecouplingKR", "TypeDDecouplingSemigroup", "TypeDDecouplingCKS", "TypeDDecouplingCKS2", "TypeDDecouplingBethe", "TypeDDecouplingKaramata", "TypeDDecouplingFiniteN", "TypeDDecouplingDressedMass", "TypeDDecouplingEqvarOrth", "TypeDDecouplingSector", "TypeDDecouplingLCLT", "TypeDDecouplingCrossover", "TypeDDecouplingDuality", "TypeDDecouplingDrift", "TypeDDecouplingBracketN", "TypeDDecouplingConc", "TypeDDecouplingDynkin", "TypeDDecouplingEW", "TypeDDecouplingTracyWidom", "TypeDDecouplingTiers34", "TypeDDecouplingDualPairWitness", "TypeDDecouplingCrossbridge", "TypeDDecouplingCrossbridgeLimit", "TypeDDecouplingMartingaleCLT", "TypeDDecouplingTwoPhase", "TypeDDecouplingMartingaleGaussian", "TypeDDecouplingLevy", "TypeDDecouplingTwoPhaseBridge", "TypeDDecouplingSkorokhodBasic", "TypeDDecouplingSkorokhodCompact", "TypeDDecouplingSkorokhodComplete", "TypeDDecouplingSkorokhodTight", "TypeDDecouplingSkorokhodMeasurable", "TypeDDecouplingSkorokhodAldous", "TypeDDecouplingSchwartzFrechet", "TypeDDecouplingSchwartzDual", "TypeDDecouplingHermite", "TypeDDecouplingHermiteSobolev", "TypeDDecouplingMitomaCore", "TypeDDecouplingMitomaBridge", "Main"]
+
+[[require]]
+name = "checkdecls"
+git = "https://github.com/PatrickMassot/checkdecls.git"
+rev = "master"
