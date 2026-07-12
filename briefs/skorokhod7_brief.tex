@@ -1,0 +1,94 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief (Skorokhod campaign, 7):\\
+\texttt{aldous\_tightness} assembled, and \texttt{prop\_aldous} de-opaqued}
+\date{9 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Two parts. Part A: assemble the packaged
+\texttt{aldous\_tightness} from Task 6's proved components (its report
+\texttt{skorokhod6\_report.md} is attached and documents the residual
+precisely --- read it first). Part B: de-opaque \texttt{prop\_aldous} in
+\texttt{TypeDDecouplingEW.lean} (attached) so that it becomes a PROVED
+corollary of Part A --- taking the project's real \texttt{sorry} count from
+2 to 1. Attached also: \texttt{TypeDDecouplingSkorokhodAldous.lean} (extend
+in place) and \texttt{...SkorokhodMeasurable.lean} (the bridge lemmas).
+Frozen: Basic/Compact/Complete/Tight/Measurable. Mathlib imports only; whole
+project must build; standard axioms only.
+
+\section*{Part A: the assembly (no new analysis --- the report's words)}
+
+Using only proved components: \texttt{consecutive\_crossing\_bound},
+\texttt{cadlagModulus\_le\_of\_crossing},
+\texttt{crossTime\_osc\_le}, \texttt{isStoppingTime\_crossTime},
+\texttt{aldousQ\_mono\_shift}, and the adapter
+\texttt{isTightMeasureSet\_of\_bdd\_of\_modulus\_witness}:
+\begin{itemize}
+\item[(a)] \underline{Crossing-count induction}: from the per-crossing bound,
+w.h.p.\ at most $K(\eps,\delta_0)$ crossings occur before time $1$ and no
+two are within $\delta$ --- the good event $G$ is a finite conjunction of
+\texttt{crossTime}-value conditions, hence measurable (this is why Task 5
+built \texttt{measurableSet\_crossTime\_le}).
+\item[(b)] \underline{Boundary bookkeeping}: the tail-cell case per Task 6's
+report (the truncated Aldous increment at $1$ covers the short terminal
+cell; follow the report's stated route exactly).
+\item[(c)] \underline{Conclusion}: on $G$, $w'(\delta)\le2\eps$ pathwise
+(\texttt{cadlagModulus\_le\_of\_crossing}); feed the witness adapter together
+with condition (i) (sup-norm boundedness) to conclude
+\texttt{IsTightMeasureSet}. Deliverables: \texttt{aldous\_tightness}
+(conditions (i) $+$ (ii) on a sequence of $\D$-valued random elements
+$\Rightarrow$ tight laws) and \texttt{aldous\_of\_moment} (via
+\texttt{aldousQ\_le\_of\_second\_moment}).
+\end{itemize}
+
+\section*{Part B: \texttt{prop\_aldous} de-opaqued (the Bethe/Dynkin
+playbook)}
+
+The current \texttt{prop\_aldous} is stated over the OPAQUE predicates
+\texttt{aldousTightAt}/\texttt{aldousModulusCond}/\texttt{realTight} with a
+schematic $\zeta:\mathbb N\to\R\to\R$ --- unprovable by design and not a
+faithful rendering (no probability space, no laws). Restructure (documented
+as a fidelity repair, citing the now-real theory):
+\begin{itemize}
+\item[(d)] RESTATE \texttt{prop\_aldous} as the real theorem: for
+$\D$-valued random elements $X_n$ on probability spaces
+$(\Omega_n,\PP_n)$ with the sup-norm boundedness condition and the Aldous
+stopping-time condition (\texttt{aldousQ} form), the pushforward laws are
+tight on $\D$ --- proved by direct application of Part A's
+\texttt{aldous\_tightness}. Keep the paper-side docstring (Thm 6.4,
+\cite{Aldous}) and note the statement is now the formalized classical
+criterion, not a citation.
+\item[(e)] The opaques: \texttt{aldousTightAt} and
+\texttt{aldousModulusCond} may be deleted IF nothing else consumes them;
+\texttt{realTight} is consumed by \texttt{thm\_mitoma} --- LEAVE
+\texttt{realTight} and \texttt{thm\_mitoma} exactly as they are (Mitoma
+remains the final citation; its de-opaquing is a future decision, not this
+task). Verify every consumer of the touched names still elaborates
+(\texttt{thm\_ewmain} especially).
+\item[(f)] If \texttt{prop\_aldous} turns out to have downstream consumers
+that pattern-match its old opaque shape, thread minimally or keep a
+deprecated alias with a docstring --- do not weaken \texttt{thm\_ewmain}.
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) Fallback: if any (a)--(c) step genuinely resists, deliver what is proved
+with the residual documented --- but the report asserts no new analytic
+content is needed; treat a failure to assemble as a signal to re-read the
+report, not to weaken statements.
+(2) Report: the final statement shapes; whether the project's real
+\texttt{sorry} count is now 1 (\texttt{thm\_mitoma} only); the consumer
+audit for the deleted opaques.
+\end{remark}
+
+\end{document}

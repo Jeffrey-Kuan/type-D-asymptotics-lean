@@ -1,0 +1,82 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\eps}{\varepsilon}\newcommand{\Q}{\mathbb Q}
+
+\title{Formalization brief (Skorokhod campaign, 8):\\
+discharging \texttt{prob\_map\_badSet\_le} --- the last Aldous residual}
+\date{9 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Discharge the single residual
+\texttt{prob\_map\_badSet\_le} in
+\texttt{TypeDDecouplingSkorokhodAldous.lean} (attached; extend in place),
+identified by Task 7's report (\texttt{skorokhod7\_report.md}, attached ---
+read it first). Its two missing ingredients, per that report:
+\begin{itemize}
+\item[(1)] crossing times ITERATED FROM A STOPPING TIME are stopping times
+(the frozen \texttt{isStoppingTime\_crossTime} in the Tight module covers
+only a deterministic start);
+\item[(2)] the terminal-boundary case (an $\eps$-crossing landing within
+$\delta$ of time $1$), with the classical level-gap bookkeeping.
+\end{itemize}
+On success, \texttt{aldous\_tightness}, \texttt{aldous\_of\_moment}, and
+\texttt{prop\_aldous} lose their transitive \texttt{sorryAx} and the
+project's real \texttt{sorry} count becomes 1 (\texttt{thm\_mitoma} only).
+Frozen: Basic/Compact/Complete/Tight/Measurable (Tight and EW attached for
+reference; new lemmas live in the Aldous file). Mathlib imports only; whole
+project must build; standard axioms only.
+
+\section*{Item (1): crossing after a stopping time}
+
+For the coordinate process on $\D$ with its right-continuous coordinate
+filtration, and a stopping time $\tau$: the first $\eps$-crossing AFTER
+$\tau$,
+$\sigma:=\inf\{t>\tau:|X_t-X_\tau|\ge\eps\}$ (clamped as in
+\texttt{crossSeq}), is again a stopping time. Route: the same
+rational-reduction as the fixed-start case ---
+$\{\sigma\le t\}=\bigcup_{q\in\Q\cap[0,t]}\big(\{\tau\le q\}\cap
+\{\exists\,r\in\Q\cap(q,t]:|X_r-X_{\text{(value at }\tau)}|\ge\eps'\}\big)$-style
+--- with the value $X_\tau$ handled through the stopping $\sigma$-algebra
+(Mathlib's \texttt{IsStoppingTime.measurableSpace} API; \texttt{stoppedValue}
+measurability via the joint measurability \texttt{measurable\_eval\_shift}
+of Task 6). Mind right-continuity for the $\ge$ vs $>$ threshold, exactly as
+in \texttt{crossTime\_le\_iff}. Conclude by induction: every
+\texttt{crossSeq} iterate is a stopping time, so Task 6's
+\texttt{consecutive\_crossing\_bound} applies at each step (its hypothesis
+is a stopping time, which is what Item (1) supplies).
+
+\section*{Item (2): the terminal boundary}
+
+The event ``some crossing lands in $(1-\delta,1]$'' per Task 7's report:
+handle by the truncated Aldous increment at $1$ (the \texttt{aldousQ}
+truncation \texttt{min}$(\tau+\delta,1)$ was designed for this; Task 5's
+convention counterexample dictates the tail-long treatment). SANCTIONED:
+the constants and threshold levels in \texttt{prob\_map\_badSet\_le} (and,
+if forced, the numeric constants inside \texttt{aldous\_tightness}'s proof
+--- NOT its statement's meaning) may be adjusted to whatever the honest
+bookkeeping yields; Task 7's report explicitly anticipated this. Any change
+must keep \texttt{aldous\_tightness}/\texttt{prop\_aldous} conclusions
+semantically identical (tightness from boundedness $+$ vanishing Aldous
+quantity); document every adjustment.
+
+\begin{remark}[hygiene]
+(1) Fallback ladder: full discharge $\to$ Item (1) proved with Item (2) as a
+sharpened documented residual $\to$ honest report. No fabrication; treat a
+statement that cannot be proved as a statement to fix (documented), not to
+force.
+(2) Report: the final form of \texttt{prob\_map\_badSet\_le}; whether
+constants changed; confirmation that \texttt{prop\_aldous} and
+\texttt{aldous\_tightness} are now \texttt{sorryAx}-free; the real count
+(target: 1).
+\end{remark}
+
+\end{document}

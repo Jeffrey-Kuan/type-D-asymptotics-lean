@@ -1,0 +1,156 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\eps}{\varepsilon}\newcommand{\Leb}{\mathrm{Leb}}
+
+\title{Formalization brief (Skorokhod campaign, 9):\\
+the genuine Aldous architecture --- replacing the refuted \texttt{badSet} route}
+\date{10 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Context.} Task 8's counterexample (see
+\texttt{skorokhod8\_report.md}, attached --- read it first) refuted
+\texttt{prob\_map\_badSet\_le}: no $\delta$-independent constant exists,
+because the ``first bad crossing index'' is future-dependent and the honest
+union bound costs a factor $\lceil 1/\delta\rceil$. That analysis was
+correct. We have since obtained the \emph{original proof} (D.~Aldous,
+``Stopping times and tightness,'' \emph{Ann.\ Probab.}~6 (1978) 335--340,
+pp.~338--340) and transcribe its actual mechanism below. The union-bound
+cost is paid by a \textbf{two-scale invocation} of the Aldous hypothesis:
+once at scale $\delta$ with tolerance $\eta_1$ (for the crossing count), and
+once at a finer scale $\sigma\le\delta$ with tolerance $\eta_2/q$ where
+$q\approx 2/\delta$ is the number of crossing indices (for the gap
+separation). No index selection is ever adapted-filtered: each crossing time
+is itself a stopping time and receives its own direct bound.
+
+\medskip
+\noindent\textbf{Goal.} In \texttt{TypeDDecouplingSkorokhodAldous.lean}
+(attached; edit in place):
+\begin{itemize}
+\item DELETE the false \texttt{prob\_map\_badSet\_le} (and
+\texttt{badSet}/\texttt{measurableSet\_badSet} if nothing else consumes
+them --- audit consumers) and REPROVE \texttt{aldous\_tightness} by the
+architecture below. The \emph{statements} of \texttt{aldous\_tightness},
+\texttt{aldous\_of\_moment}, and \texttt{prop\_aldous} (in the EW file) are
+UNCHANGED --- we have verified that the existing hypothesis
+\texttt{hald} ($\forall\eps>0\ \forall\eta>0\ \exists\delta>0\ \forall i,\
+\texttt{aldousQ}\ \delta\ \eps\le\eta$) already supplies both scales, and
+that \texttt{aldousQ}'s supremum over deterministic shifts $\delta'\le d$
+is exactly Aldous's condition (13). On success the project's real
+\texttt{sorry} count is 1 (\texttt{thm\_mitoma} only).
+\end{itemize}
+Frozen: Basic/Compact/Complete/Tight/Measurable (attached for reference;
+new lemmas live in the Aldous file). Mathlib imports only; whole project
+must build; standard axioms only.
+
+\section*{The architecture (Aldous 1978, (13)--(25), transcribed)}
+
+Fix $\eps>0$, target failure probability $\eta$. Write $X_t$ for the
+coordinate evaluation and recall \texttt{flatR}: $X_{(\tau+s)\wedge 1}=
+X_{\tau+s}$ in effect, so the \texttt{aldousQ} truncation matches Aldous's
+$[0,2]$-extension for free.
+
+\paragraph{Step 1 (have already).} The crossing sequence $T_0=0$,
+$T_{i+1}=$ first $t>T_i$ with $|X_t-X_{T_i}|\ge 2\eps$ (clamped as in
+\texttt{crossSeq}); every $T_i$ is a stopping time ---
+\texttt{isStoppingTime\_crossSeq} from Task 8 stands and is the backbone.
+
+\paragraph{Step 2 (shift-average bound; Aldous (23)--(24)).} For a stopping
+time $\tau\le1$ and $\delta>0$ let
+\[
+A_\delta(\tau):=\Big\{\omega:\ \Leb\{s\in[0,2\delta]:
+|X_{(\tau+s)\wedge1}-X_\tau|\ge\eps\}\ \ge\ \tfrac{\delta}{2}\Big\}.
+\]
+Then $\PP(A_\delta(\tau))\le 4\,\texttt{aldousQ}(2\delta,\eps)$: the fiber
+measure $L(\omega)$ has $\E L=\int_0^{2\delta}\PP(|X_{(\tau+s)\wedge1}
+-X_\tau|\ge\eps)\,ds\le 2\delta\cdot\texttt{aldousQ}(2\delta,\eps)$ by
+\texttt{le\_aldousQ\_of\_stoppingTime} (each deterministic $s\le2\delta$ is
+admissible in the supremum), and Markov at level $\delta/2$ finishes. Tools:
+Fubini via \texttt{MeasureTheory.intervalIntegral\_integral\_swap} (or
+\texttt{Measure.prod} + \texttt{lintegral\_lintegral\_swap}); joint
+measurability of $(\omega,s)\mapsto X_{(\tau(\omega)+s)\wedge1}(\omega)$
+from Task 6's \texttt{measurable\_eval\_shift} plus stopped-value
+measurability as in Task 8. \emph{No abstract conditional expectation is
+needed anywhere} --- Aldous's ``$\PP(\cdot\mid\mathcal F)\ge\frac14$''
+device is literally this explicit fiber average.
+
+\paragraph{Step 3 (pigeonhole; Aldous (21)--(22)).} Deterministic lemma: if
+$t_2-t_1<\delta$ and for $j=1,2$ the bad sets
+$\{s\in[0,2\delta]:|f(t_j+s)-f(t_j)|\ge\eps\}$ each have Lebesgue measure
+$<\delta/2$, then --- since the windows $[t_1,t_1+2\delta]$ and
+$[t_2,t_2+2\delta]$ overlap in an interval of length
+$t_1+2\delta-t_2>\delta$, and the two bad sets remove $<\delta$ of it ---
+there is a common good time $\theta_0$, whence
+$|f(t_2)-f(t_1)|<2\eps$. Contrapositive, applied at $t_1=T_{i-1}$,
+$t_2=T_i$ (where $|X_{T_i}-X_{T_{i-1}}|\ge2\eps$ by construction):
+\[
+\{T_i<1,\ T_i<T_{i-1}+\delta\}\ \subseteq\
+A_\delta(T_{i-1})\cup A_\delta(T_i),
+\]
+so by Step 2, $\PP(T_i<1,\ T_i<T_{i-1}+\delta)\le
+8\,\texttt{aldousQ}(2\delta,\eps)$ \emph{for each fixed} $i$. (Handle the
+window clipping at time $1$ via \texttt{flatR}; on $\{T_i<1\}$ both
+crossing values are genuine.)
+
+\paragraph{Step 4 (two scales and assembly; Aldous (14)--(17), (25)).}
+Instantiate \texttt{hald} twice:
+\begin{itemize}
+\item at $(\eps',\eta_1)$ obtain $\delta$ with
+$\texttt{aldousQ}(2\delta,\eps')\le\eta_1$ uniformly in $i$; fix an integer
+$q$ with $q\delta>2$ (e.g.\ $q=\lceil2/\delta\rceil+1$);
+\item at $(\eps',\eta_2/q)$ obtain $\sigma$, and replace $\sigma$ by
+$\min(\sigma,\delta)$ using \texttt{aldousQ\_mono\_shift}.
+\end{itemize}
+Then:
+\begin{itemize}
+\item[(a)] \underline{Separation (Aldous (16),(25))}: union over
+$i=1,\dots,q$ of Step 3 at scale $\sigma$ gives
+$\PP(\exists i\le q:\ T_i<1,\ T_i<T_{i-1}+\sigma)\le 8\eta_2$. The factor
+$q$ is absorbed by the $\eta_2/q$ tolerance --- this is precisely the
+device whose absence made Task 8's statement false.
+\item[(b)] \underline{Crossing count (Aldous (15))}: with $Y_i:=T_i\wedge1
+-T_{i-1}\wedge1$ and $B:=\{T_q<1\}$, event-conditioning only
+($\E[Y\,\mathbf1_B]$ manipulations, no filtration conditioning):
+$\E[Y_i\mathbf1_B]\ge\delta\big(\PP(B)-\PP(T_i<1,\,T_i<T_{i-1}+\delta)\big)
+\ge\delta(\PP(B)-8\eta_1)$ by Step 3 at scale $\delta$; summing,
+$\PP(B)\ge\E[(T_q\wedge1)\mathbf1_B]\ge q\delta(\PP(B)-8\eta_1)$, and
+$q\delta>2$ forces $\PP(T_q<1)\le 16\eta_1$.
+\item[(c)] \underline{Conclusion (Aldous (17))}: on the good event
+$\{T_q\ge1\}\cap\{\text{all gaps}\ge\sigma\}$, the path has fewer than $q$
+$2\eps'$-crossings before $1$, no two within $\sigma$, so
+\texttt{cadlagModulus\_le\_of\_crossing} gives $w'(X,\sigma)\le c\,\eps'$
+pathwise; failure probability $\le16\eta_1+8\eta_2$. Choose
+$\eps',\eta_1,\eta_2$ from the target $(\eps,\eta)$ of the witness adapter
+\texttt{isTightMeasureSet\_of\_bdd\_of\_modulus\_witness} and conclude
+\texttt{aldous\_tightness}; \texttt{aldous\_of\_moment} and
+\texttt{prop\_aldous} then clear their transitive \texttt{sorryAx}
+automatically (verify with an axiom audit).
+\end{itemize}
+SANCTIONED: all numeric constants ($16$, $8$, $\tfrac{\delta}{2}$, the
+$c$ in $w'\le c\,\eps'$, the $\eps'/\eta_j$ bookkeeping) are free to be
+whatever the honest accounting yields; the theorem \emph{statements} must
+not change meaning.
+
+\begin{remark}[hygiene]
+(1) Fallback ladder: full discharge $\to$ Steps 2--3 proved with Step 4
+assembly as a sharpened, documented residual (stated in the CORRECT
+two-scale form, never the refuted single-scale form) $\to$ honest report.
+No fabrication; a statement that cannot be proved is a statement to fix
+(documented), not to force.
+(2) Docstrings: record that the Task-8 route was refuted by counterexample
+and this file implements Aldous's original two-scale argument.
+(3) Report: final lemma names and constants; consumer audit for the deleted
+\texttt{badSet} items; confirmation that \texttt{aldous\_tightness},
+\texttt{aldous\_of\_moment}, \texttt{prop\_aldous} are \texttt{sorryAx}-free;
+the real count (target: 1, \texttt{thm\_mitoma} only).
+\end{remark}
+
+\end{document}

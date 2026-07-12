@@ -1,0 +1,129 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\Q}{\mathcal Q}
+
+\title{Formalization brief: Kolmogorov--Rogozin via Esseen's method,\\
+and \texttt{lem\_Slclt} as a corollary}
+\date{6 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} In \texttt{TypeDDecouplingLCLT.lean} (attached), remove
+the \texttt{sorry}s at \texttt{kolmogorov\_rogozin} and \texttt{lem\_Slclt}.
+Modify that file only at these two declarations; abstract analysis in a new
+library-clean file \texttt{TypeDDecouplingKR.lean} encouraged. Other leaves and
+files untouched; whole project must build; standard axioms only.
+
+\textbf{Fidelity fix (mandatory).} \texttt{lem\_Slclt} as encoded quantifies
+$\exists C$ AFTER fixing $M$, making part (a) trivially satisfiable by
+$C=\sqrt{1+M}$ --- an encoding bug, not the paper's claim. Restore fidelity by
+strengthening: the constant must be universal given $\delta$, i.e.\ restate
+part (a) with $\exists C>0$ depending only on $\delta$ (e.g.\
+$C=C_0/\sqrt\delta$ with $C_0$ universal, quantified before $M,\eta$), or
+equivalently prove the bound with an explicit such constant. Document the
+change in the docstring (this parallels the earlier \texttt{log}$_+$ fidelity
+correction). Do NOT weaken anything else.
+
+\section*{Tier 1: lattice Esseen inversion bound}
+
+For an integer-valued random variable $Y$ with characteristic function
+$\varphi(t)=\E e^{\mathrm itY}$,
+\[
+  \Q(Y):=\sup_x\PP(Y=x)\ \le\ \frac1{2\pi}\int_{-\pi}^{\pi}|\varphi(t)|\,dt,
+\]
+directly from Fourier inversion on $\Z$:
+$\PP(Y=x)=\frac1{2\pi}\int_{-\pi}^{\pi}e^{-\mathrm itx}\varphi(t)\,dt$
+(orthogonality of characters; interchange of sum and integral is finite/
+dominated).
+
+\section*{Tier 2: Kolmogorov--Rogozin, product-over-gaps route}
+
+For independent $Y_1,\dots,Y_n$ with $W:=\sum_j(1-\Q(Y_j))>0$, prove
+$\Q(\sum Y_j)\le C/\sqrt W$ with universal $C$:
+\begin{itemize}
+\item[(a)] $|\varphi_S|=\prod_j|\varphi_j|$ and
+$|\varphi_j|\le\exp\big(-\tfrac12(1-|\varphi_j|^2)\big)$ (from
+$x\le e^{-(1-x^2)/2}$ on $[0,1]$).
+\item[(b)] \underline{Symmetrization:} $1-|\varphi_j(t)|^2=\E(1-\cos tY^s_j)$
+where $Y^s_j=Y_j-Y_j'$ ($Y_j'$ an independent copy); as a sum over the lattice,
+\[
+  1-|\varphi_j(t)|^2=\sum_{y\ne0}w_{j,y}\,(1-\cos ty),\qquad
+  w_{j,y}:=\PP(Y^s_j=y)\ \ge0 .
+\]
+No probability space enlargement is needed: define
+$w_{j,y}=\sum_x\PP(Y_j=x)\PP(Y_j=x+y)$ directly and prove the identity
+algebraically from $|\varphi_j|^2=\varphi_j\overline{\varphi_j}$.
+\item[(c)] \underline{Atom bound:} $\PP(Y^s_j=0)=\sum_x\PP(Y_j=x)^2\le\Q(Y_j)$,
+hence $W_j:=\sum_{y\ne0}w_{j,y}\ge1-\Q(Y_j)$ and $\sum_jW_j\ge W$.
+\item[(d)] \underline{Single-gap integral:} for each integer $y\ne0$ and $a>0$,
+by $|y|$-periodicity of $u\mapsto1-\cos(yu)$ (substitute $v=yu$; the interval
+$[-\pi,\pi]$ maps onto $|y|$ periods),
+\[
+  \int_{-\pi}^{\pi}e^{-a(1-\cos yt)}\,dt=\int_{-\pi}^{\pi}e^{-a(1-\cos v)}\,dv
+  \ \le\ \frac{C_1}{\sqrt{1+a}},
+\]
+the latter from $1-\cos v\ge\tfrac2{\pi^2}v^2$ on $[-\pi,\pi]$ and the Gaussian
+integral.
+\item[(e)] \underline{Generalized H\"older:} truncate each gap sum to a finite
+set carrying $W_j^L\uparrow W_j$; with weights $\lambda_{j,y}=w_{j,y}/W^L$,
+$W^L:=\sum_{j,y\le L}w_{j,y}$,
+\[
+  \int_{-\pi}^{\pi}\prod_{j,y}e^{-\frac12w_{j,y}(1-\cos ty)}\,dt
+  \ \le\ \prod_{j,y}\Big(\int_{-\pi}^{\pi}
+  e^{-\frac12W^L(1-\cos ty)}\,dt\Big)^{w_{j,y}/W^L}
+  \ \le\ \frac{C_1}{\sqrt{1+W^L/2}},
+\]
+by finite H\"older (\texttt{inner\_le\_nnorm}\dots use Mathlib's
+finite-product H\"older / \texttt{integral\_prod\_norm\_pow\_le} or prove the
+finite case by induction from Cauchy--Schwarz--type interpolation; the
+exponents sum to $1$) and (d). Let $L\to\infty$, then combine with Tier 1 and
+(c): $\Q(S)\le C/\sqrt{1+W}\le C/\sqrt W$.
+\end{itemize}
+Mind $W$ possibly $0$ for some $j$ (those factors contribute exponent $0$ ---
+drop them) and the hypothesis $0<W$ of the target statement.
+
+\section*{Tier 3: \texttt{lem\_Slclt} as a corollary}
+
+\begin{itemize}
+\item[(f)] \underline{Part (a):} concentration is shift-invariant
+($\Q(\mathrm{shift}+Z)=\Q(Z)$). Each $\eta_j$ is two-valued with both atoms
+$\ge\delta$, so $\Q(\eta_j)\le1-\delta$ and $\sum_j(1-\Q(\eta_j))\ge M\delta$.
+For $M\ge1$ Tier 2 gives $\Q\le C/\sqrt{M\delta}\le(C\sqrt2/\sqrt\delta)/
+\sqrt{1+M}$; for $M=0$, $\Q\le1\le C'/\sqrt{1+0}$. Constant depends only on
+$\delta$ --- this is the strengthened statement of the fidelity fix.
+\item[(g)] \underline{Part (b), Poisson lower tail:} from the domination
+hypothesis, $\PP(M_{\mathrm{rv}}<t/2)\le e^{-t}\sum_{i<t/2}t^i/i!$; prove
+$e^{-t}\sum_{i\le t/2}t^i/i!\le e^{-ct}$ for an explicit universal $c>0$ (e.g.
+via $\sum_{i\le k}t^i/i!\le(et/k)^k$ for $k\le t$, giving
+$c=\tfrac12\ln2-\tfrac14$\dots any correct explicit constant; handle small $t$
+separately where the left side is $\le1\le e^{-ct}\cdot e^{c t_0}$ absorbed
+into the constant --- note the target has $\exists c>0$, so absorbing
+finitely many small-$t$ cases is legitimate but the bound must hold for ALL
+$t\ge0$: check $t\in[0,t_0]$ directly, where
+$e^{-t}\sum_{i<t/2}t^i/i!\le e^{-t}e^{t}=1$ fails to be $\le e^{-ct}$ only if
+$ct>0$\dots choose $c$ small enough that $e^{-t}\sum_{i\le t/2}t^i/i!\le
+e^{-ct}$ can be verified for all $t\ge0$ by a single monotonicity/convexity
+argument; any correct route).
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) Search Mathlib first: characteristic functions of $\Z$-valued variables
+(possibly via \texttt{charFun} of pushforwards), finite H\"older for
+integrals, Gaussian integral bounds, $\sum t^i/i!$ estimates.
+(2) \texttt{iIndepFun} gives the product formula for characteristic functions
+--- locate the right Mathlib lemma (independence $\Rightarrow$
+$\E\prod=\prod\E$ for bounded measurable/integrable complex functions).
+(3) Constants free; explicit is better than optimal.
+(4) Report: confirm the \texttt{lem\_Slclt} statement strengthening, and
+whether the project's term-level count dropped by two (13 $\to$ 11).
+\end{remark}
+
+\end{document}

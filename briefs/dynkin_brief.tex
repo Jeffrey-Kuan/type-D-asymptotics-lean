@@ -1,0 +1,108 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\ee}{\mathcal E}\newcommand{\F}{\mathcal F}
+
+\title{Formalization brief: de-opaquing \texttt{lem\_dynkin}\\
+(Dynkin martingale proved; bracket by definition, Beth\'e-playbook)}
+\date{7 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry} at \texttt{lem\_dynkin} in
+\texttt{TypeDDecouplingEW.lean} (attached). As with the former
+\texttt{asepGreenIntegrand}, the conclusion is pinned to OPAQUE objects
+(\texttt{dynkinIsMart}, \texttt{dynkinBracket}) --- unprovable by design.
+Sanctioned RESTRUCTURING of the \texttt{lem\_dynkin} block only (documented,
+fidelity-repair convention; the Bethe/\texttt{asepKernel} precedent): replace
+the opaques by real content, prove what is provable, and shrink what remains
+to a definitional citation. All other declarations and leaves untouched;
+every consumer must still elaborate. New library-clean file
+\texttt{TypeDDecouplingDynkin.lean} encouraged. Whole project must build;
+standard axioms only.
+
+\section*{Part 1: the martingale property --- PROVED, against Mathlib's
+\texttt{Martingale}}
+
+Replace \texttt{dynkinIsMart} by Mathlib's genuine
+\texttt{MeasureTheory.Martingale} for an $\R$-indexed filtration
+$\F=(\F_t)_{t\ge0}$ on $\Omega$ (a hypothesis of the statement, together with
+adaptedness of $t\mapsto\mathrm{proc}\ t$). Faithful hypothesis bundle
+(hproc style, documented field-by-field; these are exactly the Markov--Feller
+facts the paper's process possesses):
+\begin{itemize}
+\item[(i)] a semigroup $P:\R_{\ge0}\to(S\to\R)\to(S\to\R)$ with the
+\underline{Markov property}: for $0\le s\le t$ and bounded measurable $g$,
+$\mu[\,g(\mathrm{proc}\ t)\mid\F_s\,]=(P_{t-s}g)(\mathrm{proc}\ s)$ a.e.;
+\item[(ii)] the \underline{Kolmogorov identity}:
+$P_tf-f=\int_0^tP_s(Lf)\,ds$ pointwise on $S$ (for the $f$'s in play);
+\item[(iii)] boundedness/measurability of $f$, $Lf$, and joint measurability
+of $(s,\omega)\mapsto Lf(\mathrm{proc}\ s\ \omega)$, enough for the
+conditional Fubini below (state exactly what is used).
+\end{itemize}
+Then PROVE: $M^f_t:=f(\mathrm{proc}\ t)-f(\mathrm{proc}\ 0)
+-\int_0^tLf(\mathrm{proc}\ s)\,ds$ is a martingale:
+integrability from (iii); for $s\le t$,
+\[
+  \mu[M^f_t-M^f_s\mid\F_s]
+  =(P_{t-s}f)(\mathrm{proc}\ s)-f(\mathrm{proc}\ s)
+  -\int_s^t(P_{u-s}Lf)(\mathrm{proc}\ s)\,du=0
+\]
+by (i), the conditional Fubini (pull the time integral through the
+conditional expectation, justified by (iii)), and (ii) at $t-s$. This is a
+tower-property computation --- do it in full.
+
+\section*{Part 2: the bracket --- definitional, with citation}
+
+Mathlib has no continuous-time predictable quadratic covariation, so the
+identity $\langle M^f,M^g\rangle_t=\int_0^t\Gamma(f,g)(\mathrm{proc}\ s)\,ds$
+cannot even be STATED against a library object. Repair (document prominently):
+DEFINE \texttt{dynkinBracket} as that integral (replacing the opaque), so the
+second conjunct becomes definitional; the docstring records that identifying
+this with the true predictable bracket is the cited classical fact
+(Ethier--Kurtz Ch.~4 / Dellacherie--Meyer), exactly as \texttt{asepKernel}'s
+identification rests on Sch\"utz. IN ADDITION, prove the honest
+$L^2$-level content that IS accessible (this is the part consumers morally
+use): the integrated covariance identity
+\[
+  \E\big[M^f_t\,M^g_t\big]\ =\ \E\Big[\int_0^t\Gamma(f,g)(\mathrm{proc}\ s)\,ds\Big],
+  \qquad
+  \Gamma(f,g):=L(fg)-fLg-gLf,
+\]
+from the same bundle (compute both sides via (i)--(ii); polarize from the
+$f=g$ case if simpler; add the needed boundedness of $fg$, $L(fg)$ to (iii)).
+If the general-$t$ computation is heavy, the identity for $f=g$
+(second moment of $M^f$) is the sanctioned minimum.
+
+\section*{Part 3: wiring}
+
+Restate \texttt{lem\_dynkin} with the bundle and the new conclusions
+(Martingale $+$ definitional bracket $+$ the proved $L^2$ identity); delete
+the opaques \texttt{dynkinIsMart}/\texttt{dynkinBracket}; keep the docstring's
+citations and record this as the block's fidelity repair (the opaque-pinned
+form was unprovable by design; the new form proves the martingale property
+outright and shrinks the citation to the bracket identification). Check and
+rewire any consumer. Target count 7 $\to$ 6 (EW file 5 $\to$ 4).
+
+\begin{remark}[hygiene]
+(1) Search Mathlib first: \texttt{MeasureTheory.Martingale} ($\R$-indexed),
+\texttt{Filtration}, conditional-expectation API
+(\texttt{condExp}), Fubini for conditional expectations
+(\texttt{MeasureTheory.condExp\_integral}\dots\ find the right form or prove
+the needed instance), \texttt{intervalIntegral} measurability lemmas.
+(2) The bundle must be SATISFIABLE and faithful: every field is a standard
+fact for a Feller jump process with bounded generator; say so per field.
+(3) No other EW leaf may be touched; \texttt{thm\_ewmain}'s wiring must
+survive verbatim or with the minimal threading.
+(4) Report: which parts of Part 2 were proved ($fg$ general or $f=g$ only),
+and the final count.
+\end{remark}
+
+\end{document}

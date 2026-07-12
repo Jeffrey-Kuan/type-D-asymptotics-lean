@@ -1,0 +1,107 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\Q}{\mathbb Q}\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief (Skorokhod campaign, 4 of $\sim$5):\\
+the measurability core, and Aldous completed}
+\date{9 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Close Task 3's two identified gaps on
+$\D=D([0,1],\R)$ (files attached: Basic, Compact, Complete, Tight --- do not
+modify them; adapters in the new files): \textbf{(G1)} the measurability core
+--- coordinate evaluations, Borel $=$ cylinder $\sigma$-algebra, modulus
+measurability, and the process-to-path-variable bridge; \textbf{(G2)} Aldous's
+criterion. New library-clean files (suggest
+\texttt{TypeDDecouplingSkorokhodMeasurable.lean} and
+\texttt{...SkorokhodAldous.lean}). Mathlib imports only; whole project must
+build; standard axioms only; \texttt{prop\_aldous} still untouched (Task 5).
+
+\section*{Tier 1 (G1): the measurability core}
+
+\begin{itemize}
+\item[(a)] \underline{Evaluations are Borel.} Task 3's identified strategy:
+for $q\in[0,1)$ the integral-average functionals
+$A_nf:=n\int_q^{q+1/n}f(s)\,ds$ are $d^\circ$-continuous --- on a convergent
+sequence $f_k\to f$, $J_1$ convergence gives $f_k\to f$ pointwise at every
+continuity point of $f$ (use \texttt{tendsto\_iff\_exists\_timeChanges} and
+\texttt{continuousAt\_eval}) and uniform boundedness on balls
+(\texttt{dist\_supNorm\_le}), so dominated convergence applies. Then
+$f(q)=\lim_nA_nf$ by right-continuity, so
+$\mathrm{eval}_q:f\mapsto f(q)$ is Borel (pointwise limit of continuous
+functions); $\mathrm{eval}_1$ via the flat extension (Task 1's encoding makes
+it the average over $[1,1+1/n]$, trivially).
+\item[(b)] \underline{Borel $=$ cylinder.} $\sigma(\mathrm{eval}_t:t\in[0,1])
+=\mathcal B(\D)$. The $\subseteq$ direction is (a). For $\supseteq$, either
+route is sanctioned: (i) the countable-infimum route --- $d^\circ(\cdot,g)$ is
+cylinder-measurable because the infimum over time changes may be restricted to
+the COUNTABLE family of rational-node piecewise-linear ones (Task 2's
+\texttt{plLambda} separability machinery is exactly this approximation ---
+extract it as a lemma), and each candidate's max-term is a countable sup of
+cylinder-measurable functions with rational arguments; or (ii) the abstract
+route --- a countable separating family of Borel functions on a Polish space
+generates the Borel $\sigma$-algebra (if the required Lusin--Souslin/Kuratowski
+ingredient exists in Mathlib, use it; otherwise take route (i)).
+\item[(c)] \underline{Modulus is Borel}: $f\mapsto w'_f(\delta)$ via the
+rational-partition reduction (partitions with rational nodes suffice ---
+prove it, using right-continuity as in Task 3's notes) and (a).
+\item[(d)] \underline{The bridge lemma} (Task 5's plumbing --- deliver even if
+(G2) stalls): $X:\Omega\to\D$ is measurable iff $\omega\mapsto X(\omega)(t)$
+is measurable for every $t$ (equivalently every rational $t$); and the law
+$\mathrm{Measure.map}\,X$ is determined by the finite-dimensional
+distributions.
+\end{itemize}
+
+\section*{Tier 2 (G2): Aldous's criterion}
+
+With (G1) available, prove \texttt{aldous\_tightness} exactly as stated in
+Task 3's brief (conditions (i) boundedness $+$ (ii) the stopping-time
+condition $\Rightarrow$ tight), following Billingsley \S16, (16.24)--(16.32):
+\begin{itemize}
+\item[(e)] \underline{The averaging lemma}: from (ii), for the
+\texttt{crossTime} iterates $\tau_k$ of Task 3 (Tier 2 there): bound
+$\PP(\tau_{k+1}-\tau_k\le\delta,\ \tau_k<1)$ uniformly --- implement
+Billingsley's device of applying (ii) at an INDEPENDENT $\delta$ averaged
+over $[0,2\delta_0]$ (adjoin the auxiliary uniform variable by a product
+space; this is honest and standard --- document the product-space
+construction) to convert the fixed-$\delta$ condition into control of the
+two consecutive stopping times.
+\item[(f)] \underline{Assembly}: w.h.p.\ at most $K$ oscillation times, all
+$\delta$-separated; the partition by $\{\tau_k\}$ witnesses
+$w'(\delta)\le2\eps$; conclude by Task 3's
+\texttt{isTightMeasureSet\_of\_bdd\_of\_modulus}. Then
+\texttt{aldous\_of\_moment} by Markov.
+\end{itemize}
+
+SANCTIONED ALTERNATIVE (equal-value deliverable if the averaging resists):
+the adjacent-increment moment criterion (Billingsley Thm 13.5/15.6 style),
+proved by dyadic chaining with NO stopping times:
+\[
+  \E\big[|X_t-X_s|^{\gamma}\,|X_s-X_r|^{\gamma}\big]\le C\,(t-r)^{1+\beta}
+  \ (r\le s\le t)\ \Longrightarrow\ \text{the }w'\text{ modulus condition, hence tightness,}
+\]
+(\texttt{tightness\_of\_adjacent\_moments}) --- this is the criterion
+applications typically verify, and it consumes (G1) the same way. Deliver at
+least ONE of \texttt{aldous\_tightness} / \texttt{tightness\_of\_adjacent\_moments};
+both if the campaign gods smile.
+
+\begin{remark}[hygiene]
+(1) Tier 1 is a MUST-HAVE in full --- (d) unlocks Task 5 regardless of (G2).
+(2) Fallback ladder: (e)--(f) full Aldous $\to$ the alternative
+moment criterion $\to$ Tier 1 alone (still a complete deliverable; report
+honestly).
+(3) Report: routes taken in (b); which of the two Tier-2 targets landed;
+any Billingsley \S16/\S13 gaps (the averaging product-space bookkeeping and
+the chaining boundary cases are the likely spots).
+\end{remark}
+
+\end{document}

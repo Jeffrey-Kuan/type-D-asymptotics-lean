@@ -1,0 +1,109 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\norm}[1]{\lVert #1\rVert}
+
+\title{Formalization brief (Skorokhod campaign, 2 of $\sim$5):\\
+the c\`adl\`ag modulus, completeness, separability, and compactness}
+\date{8 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Complete the metric theory of
+\texttt{TypeDDecouplingSkorokhodBasic.lean} (attached): discharge its four
+documented residual \texttt{sorry}s (completeness, separability, and the
+modulus/partition primitives blocking them) and prove the compactness
+characterization (Billingsley Thm 12.3). You MAY fill the residuals in place
+in the Basic file; new material (modulus, compactness) goes in a new
+library-clean file (suggest \texttt{TypeDDecouplingSkorokhodCompact.lean}).
+Keep the Basic file's public API stable --- Task 3 (tightness + Aldous) will
+consume it. Mathlib imports only; whole project must build; standard axioms
+only.
+
+\section*{Tier 1: the c\`adl\`ag modulus and the partition lemma (the
+primitive everything needs)}
+
+For $f\in\D$ and $\delta>0$ define
+\[
+  w'_f(\delta):=\inf\Big\{\max_i\ \mathrm{osc}\big(f,[t_{i-1},t_i)\big):
+  0=t_0<\dots<t_k=1,\ t_i-t_{i-1}>\delta\ \forall i<k\Big\},
+\]
+oscillation $=\sup_{s,t\in[t_{i-1},t_i)}|f(s)-f(t)|$ (the last interval may be
+short --- follow Billingsley's convention and STATE which one you take; both
+work, consistency matters).
+\begin{itemize}
+\item[(a)] \underline{The partition lemma}: for every c\`adl\`ag $f$ and
+$\eps>0$ there is a finite partition $0=t_0<\dots<t_k=1$ with
+$\mathrm{osc}(f,[t_{i-1},t_i))<\eps$ for all $i$. Proof route: let $T^*$ be
+the supremum of $t$ such that $[0,t)$ admits such a partition; right-continuity
+extends past any $t<1$, the left limit at $T^*$ closes the interval; conclude
+$T^*=1$ and attained. This is the single most reused lemma of the campaign ---
+make it clean and general.
+\item[(b)] Consequences: $w'_f(\delta)<\infty$; $w'_f(\delta)\downarrow$ as
+$\delta\downarrow0$ with limit $0$; $w'$ vs the uniform modulus and the
+maximal jump (the standard comparison inequalities, Billingsley (12.7)--(12.9)
+--- prove the ones Tasks 2--3 need: $w'_f(\delta)\le w_f(2\delta)$ and the
+jump bound $\sup_t|f(t)-f(t^-)|\le\ ...$ relation; do not gold-plate).
+\end{itemize}
+
+\section*{Tier 2: discharge the Basic file's residuals}
+
+\begin{itemize}
+\item[(c)] \underline{Separability}: rational piecewise-constant functions on
+rational partitions are $d^\circ$-dense (via (a): partition with oscillation
+$<\eps$, replace $f$ by its value at each left endpoint, adjust partition
+points to rationals with a small time change, values to rationals). Then the
+\texttt{SeparableSpace} instance, and \texttt{PolishSpace} once (d) is done.
+\item[(d)] \underline{Completeness}: execute the $\sigma_\infty$
+infinite-composition strategy already documented in the Basic file's
+docstring (rapidly Cauchy subsequence, $\lambda_n=\lim_m\mu_{n+m}\circ\cdots
+\circ\mu_n$ with geometric log-slope control, uniform Cauchy of
+$f_n\circ\lambda_n^{-1}$, uniform limit c\`adl\`ag --- that lemma is already
+proved in Basic). The telescoping estimate in the docstring is the intended
+path; follow it.
+\end{itemize}
+
+\section*{Tier 3: compactness (Billingsley Thm 12.3)}
+
+$A\subseteq\D$ is relatively compact iff
+\[
+  \sup_{f\in A}\norm f_\infty<\infty
+  \qquad\text{and}\qquad
+  \lim_{\delta\to0}\ \sup_{f\in A}w'_f(\delta)=0 .
+\]
+\begin{itemize}
+\item[(e)] \underline{Sufficiency} (the direction tightness needs): bounded
+$+$ uniform modulus decay $\Rightarrow$ totally bounded (finite $\eps$-nets of
+piecewise constants on a fixed grid with values in a finite lattice --- the
+partition machinery of (a) again), hence relatively compact by (d).
+\item[(f)] \underline{Necessity}: from relative compactness, boundedness via
+continuity of $\norm\cdot_\infty$-type bounds along $d^\circ$ (careful:
+$\norm\cdot_\infty$ is not $J_1$-continuous, but it IS bounded on
+$d^\circ$-balls --- prove the correct statement:
+$\norm g_\infty\le\norm f_\infty+2d^\circ(f,g)$-type), and modulus decay via
+the finite-net argument reversed. If (f) resists in full, it is the
+SANCTIONED deferrable half --- (a)--(e) are the deliverables Task 3 consumes.
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) Follow Billingsley \S12 conventions; report any informal-proof gaps found
+(the Tier-1 sup argument and the endpoint conventions are the likely spots).
+(2) The modulus $w'$ and the partition lemma must be stated against the
+Basic file's \texttt{Skoro}/\texttt{IsCadlag} API --- no parallel
+re-definitions.
+(3) Deliverable checklist to report on: (a)--(f) status;
+\texttt{CompleteSpace}, \texttt{SeparableSpace}, \texttt{PolishSpace}
+instances live; residual count of the Basic file (target: 0); whether the
+compactness iff is full or one-sided.
+(4) Numerical sanity encouraged: $w'$ of a single unit step at $a\in(0,1)$ is
+$0$ for $\delta<\min(a,1-a)$.
+\end{remark}
+
+\end{document}

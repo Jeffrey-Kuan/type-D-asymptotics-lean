@@ -1,0 +1,131 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\dd}{\,\mathrm d}
+
+\title{Formalization brief: Karamata's Tauberian theorem at constant $L$\\
+(the case the project uses), with a fidelity repair of the general statement}
+\date{7 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} In \texttt{TypeDDecouplingLCLT.lean} (attached),
+replace the \texttt{sorry}-ed \texttt{karamata\_tauberian} by a PROVED theorem
+at the strength the project uses, and rewire its sole consumer
+\texttt{lem\_tau}. Abstract analysis in a new library-clean file
+\texttt{TypeDDecouplingKaramata.lean} encouraged. Only these may change; whole
+project must build; standard axioms only.
+
+\textbf{Fidelity repair (document as such).} The encoded general statement
+quantifies over ALL pointwise slowly varying $L$ with no measurability
+hypothesis; the cited theorem (BGT Thm 1.7.1$'$, Feller XIII.5) requires $L$
+measurable, and the slowly-varying theory (UCT) fails for non-measurable $L$
+--- the encoded statement therefore exceeds the cited literature and is not a
+faithful citation. Repair: restate the theorem at constant $L$ (which is what
+the consumer \texttt{lem\_tau} instantiates: $L\equiv m(r)/(2\sqrt a)$,
+$\rho=1/2$), i.e.
+\[
+  \omega(\lambda)=\int_0^\infty e^{-\lambda t}p(t)\dd t,\qquad
+  \omega(\lambda)\sim c\,\lambda^{-\rho}\ (\lambda\downarrow0)
+  \iff
+  \int_0^sp\sim \frac{c\,s^{\rho}}{\Gamma(\rho+1)}\ (s\to\infty),
+\]
+for $p\ge0$ locally integrable, $c>0$, $\rho\ge0$. Keep a docstring recording:
+the general measurable-$L$ theorem is the cited literature; the constant-$L$
+case is proved here; the removed statement's measurability gap (the sixth
+fidelity catch of this project). Both directions ($\iff$) are wanted; if one
+direction resists, the Tauberian direction ($\Rightarrow$ from $\omega$ to
+$\int p$) is the one \texttt{lem\_tau} consumes and is the minimum
+deliverable (then keep the Abelian direction as a separate statement or drop
+the iff, documenting the choice).
+
+\section*{Tier 1: the Abelian direction (elementary)}
+
+With $U(s):=\int_0^sp$: Fubini on $\{(t,s):0<t\le s\}$ gives
+$\omega(\lambda)=\lambda\int_0^\infty e^{-\lambda s}U(s)\dd s$; substitute
+$s=x/\lambda$:
+$\lambda^{\rho}\omega(\lambda)=\int_0^\infty e^{-x}\,\lambda^{\rho}
+U(x/\lambda)\dd x$. From $U(s)\sim cs^\rho/\Gamma(\rho+1)$: pointwise
+$\lambda^\rho U(x/\lambda)\to cx^\rho/\Gamma(\rho+1)$, dominated by
+$C(1+x^\rho)$ (from the equivalence for large $s$ and monotonicity of $U$ for
+the head), so DCT gives
+$\lambda^\rho\omega(\lambda)\to\frac c{\Gamma(\rho+1)}\int_0^\infty
+x^\rho e^{-x}\dd x=c$.
+
+\section*{Tier 2: the Tauberian direction (Karamata's method, constant $L$)}
+
+Assume $\lambda^\rho\omega(\lambda)\to c$. Handle $\rho=0$ separately
+(monotone convergence: $\omega(\lambda)\uparrow U(\infty)$ as
+$\lambda\downarrow0$ by MCT for $p\ge0$, so $U(\infty)=c$ finite and the
+conclusion is $U(s)\to c$). For $\rho>0$:
+\begin{itemize}
+\item[(a)] \underline{Moments.} For each $k\in\mathbb N$,
+$\lambda^\rho\,\omega\big((k{+}1)\lambda\big)\to c$ gives
+\[
+  \int_0^\infty e^{-(k+1)\lambda t}\lambda^{\rho}p(t)\dd t
+  \ \longrightarrow\ \frac{c}{(k+1)^{\rho}}
+  \ =\ \frac c{\Gamma(\rho)}\int_0^\infty e^{-(k+1)u}u^{\rho-1}\dd u .
+\]
+Hence for every polynomial $P$ (in the variable $e^{-u}$),
+$\int_0^\infty P(e^{-\lambda t})e^{-\lambda t}\lambda^{\rho}p(t)\dd t\to
+\frac c{\Gamma(\rho)}\int_0^\infty P(e^{-u})e^{-u}u^{\rho-1}\dd u$
+(finite linear combinations).
+\item[(b)] \underline{One-sided approximation.} The target is
+$g_0(u):=\mathbf 1_{[0,1]}(u)$, since
+$\int_0^\infty\mathbf 1_{[0,1]}(\lambda t)\,\lambda^\rho p(t)\dd t
+=\lambda^\rho U(1/\lambda)$ and
+$\frac c{\Gamma(\rho)}\int_0^\infty\mathbf 1_{[0,1]}(u)u^{\rho-1}\dd u
+=\frac c{\Gamma(\rho+1)}$. Write test functions as $h(e^{-u})$,
+$h:[0,1]\to\R$; the target is $h_0(x)=\mathbf 1_{[e^{-1},1]}(x)$. Construct,
+for each $\eps>0$, CONTINUOUS $h_-\le h_0\le h_+$ on $[0,1]$ differing from
+$h_0$ only on $(e^{-1}-\eps',e^{-1}+\eps')$, then Stone--Weierstrass /
+Bernstein (in Mathlib) gives polynomials $P_\pm$ with
+$h_-{-}\eps\le P_-\le h_-$ and $h_+\le P_+\le h_+{+}\eps$
+(one-sidedness by shifting the uniform approximation by $\eps$). Using
+$p\ge0$, sandwich
+\[
+  \int P_-(e^{-\lambda t})e^{-\lambda t}\cdot\frac{stuff}{}\ \le\
+  \lambda^\rho U(1/\lambda)\text{-type}\ \le\ \int P_+(\cdots)
+\]
+--- CARE: the moment functionals in (a) carry the factor $e^{-u}$ ($k\ge0$,
+i.e.\ test functions $x\cdot(\text{poly})$, vanishing at $x{=}0$
+$\Leftrightarrow$ $u{=}\infty$); arrange the sandwich for
+$h_0(x)/x$-weighted functionals or include the factor in $h_\pm$
+(the classical bookkeeping --- either convention works; the limit measure
+$\frac c{\Gamma(\rho)}u^{\rho-1}\dd u\circ(e^{-u})^{-1}$ integrates the
+approximation error to $O(\eps)$ since the jump point carries no mass and,
+for the $x\to0$ end, $u^{\rho-1}e^{-u}$ is integrable).
+\item[(c)] \underline{Conclude.} $\limsup/\liminf$ of
+$\lambda^\rho U(1/\lambda)$ within $O(\eps)$ of $c/\Gamma(\rho+1)$; let
+$\eps\to0$; convert $\lambda\downarrow0$ to $s\to\infty$ ($s=1/\lambda$; the
+$\mathrm{IsEquivalent}$ form as in the current statement).
+\end{itemize}
+
+\section*{Tier 3: rewiring}
+
+\texttt{lem\_tau} currently instantiates the old statement with a constant
+$L$; rewire to the new theorem (the instantiation should simplify). Remove the
+old general statement; its docstring content (BGT/Feller citations) moves to
+the new theorem's docstring together with the fidelity note. Target count
+9 $\to$ 8.
+
+\begin{remark}[hygiene]
+(1) Search Mathlib first: Bernstein polynomials
+(\texttt{bernsteinApproximation}), Stone--Weierstrass, $\Gamma$-integrals,
+Laplace-transform lemmas, \texttt{Asymptotics.IsEquivalent} API.
+(2) Sanctioned fallbacks: prove the Tauberian direction only (keep Abelian as
+a separate proved lemma or drop, documented); if general $\rho>0$ resists in
+(b)'s bookkeeping, $\rho=1/2$ with the explicit weight
+$u^{-1/2}e^{-u}$ is the minimum deliverable (what \texttt{lem\_tau} needs).
+(3) Constants/forms free; match \texttt{lem\_tau}'s consumption exactly.
+(4) Report which directions/generality were achieved and the final count.
+\end{remark}
+
+\end{document}

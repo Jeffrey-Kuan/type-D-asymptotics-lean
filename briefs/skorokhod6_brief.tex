@@ -1,0 +1,91 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief (Skorokhod campaign, 6 of $\sim$7):\\
+progressive measurability, and Aldous assembled}
+\date{9 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Close Task 5's sole residual and assemble
+\texttt{aldous\_tightness}. Attached: Task 5's report
+(\texttt{skorokhod5\_report.md} --- read it first; it specifies the exact
+missing input and the one-lemma-away assembly), the Aldous and Measurable
+modules. The other Skorokhod modules are in the project as before. You may
+EXTEND \texttt{TypeDDecouplingSkorokhodAldous.lean} in place (it is this
+campaign's live file) or add a companion; frozen: Basic, Compact, Complete,
+Tight, Measurable. Mathlib imports only; whole project must build; standard
+axioms only; \texttt{prop\_aldous} untouched (final task's wiring).
+
+\section*{Tier 1: joint (progressive) measurability of the canonical process}
+
+For a measurable $X:\Omega\to\D$, prove joint measurability of the evaluated
+process:
+\[
+  \big([0,1]\times\Omega,\ \mathcal B\otimes\mathcal F\big)\ni(s,\omega)
+  \ \longmapsto\ X(\omega)(s)\in\R .
+\]
+Route (elementary, classical): dyadic right-endpoint approximation
+$X^n(s,\omega):=X(\omega)\big(\min(\lceil s2^n\rceil/2^n,1)\big)$ --- each
+$X^n$ is jointly measurable (finitely many time-cells; on each, a fixed-time
+evaluation, measurable by Task 4's \texttt{measurable\_eval}); and
+$X^n(s,\omega)\to X(\omega)(s)$ pointwise since the dyadic approximants
+decrease to $s$ FROM THE RIGHT and paths are right-continuous
+(\texttt{Skoro.rightContinuous}, proved in Task 5). Conclude the consumer
+form: for a measurable $\tau:\Omega\to[0,1]$ (the \texttt{crossTime}
+stopping times are measurable),
+\[
+  (\delta,\omega)\ \longmapsto\ X(\omega)\big(\min(\tau(\omega)+\delta,1)\big)
+\]
+is jointly measurable on $[0,2\delta_0]\times\Omega$ (composition with the
+measurable $(\delta,\omega)\mapsto(\min(\tau(\omega)+\delta,1),\omega)$).
+If Mathlib's \texttt{ProgMeasurable} packaging fits cheaply (search for a
+right-continuous analogue of
+\texttt{StronglyAdapted.progMeasurable\_of\_continuous}; likely absent),
+also state it against the coordinate filtration; the bespoke joint-measurability
+lemma is what Tier 2 consumes and is the must-have.
+
+\section*{Tier 2: the $v$-term reduction (the residual)}
+
+With Tier 1, execute the reduction identified in the Task-5 report: the
+second term of \texttt{averaging\_split\_bound} --- the $\delta$-integral of
+$\PP(|X(\tau'+\cdot)-X(\tau')|\ge\eps/2)$-type quantities with the
+$\omega$-dependent shift --- is bounded by $\alpha(2\delta_0,\eps/2)$ via the
+Fubini/Tonelli swap (\texttt{lintegral} form; joint measurability of the
+integrand is exactly Tier 1) and the $\omega$-wise change of variable, using
+\texttt{aldousQ\_mono\_shift} and the fact that $\tau'$ plus a constant,
+truncated, is again admissible in the Aldous supremum. Follow the report's
+statement of the gap precisely; do not restructure the delivered Tier-1/2
+lemmas of Task 5.
+
+\section*{Tier 3: assembly}
+
+\texttt{aldous\_tightness}: conditions (i) sup-norm boundedness and (ii)
+$\alpha(\delta_0,\eps)\to0$, uniformly in $n$, imply
+\texttt{IsTightMeasureSet} of the laws --- combine the consecutive-crossing
+bound (now fully proved via Tier 2), induction on crossings, Task 5's
+\texttt{cadlagModulus\_le\_of\_crossing} on the measurable witness event, the
+boundary/tail handling the report documents, and the adapter
+\texttt{isTightMeasureSet\_of\_bdd\_of\_modulus\_witness}. Then
+\texttt{aldous\_of\_moment} via \texttt{prob\_ge\_le\_second\_moment}.
+
+\begin{remark}[hygiene]
+(1) Fallback ladder: full assembly $\to$ Tiers 1--2 proved with assembly as
+sole documented residual $\to$ Tier 1 alone. No incorrect statements, no
+placeholder \texttt{sorry}s.
+(2) Report: the Tier-1 statement shape (bespoke vs \texttt{ProgMeasurable});
+any measure-theoretic subtleties in the $\omega$-wise change of variable
+(the likely spot: null sets under the shift); final status of
+\texttt{aldous\_tightness}/\texttt{aldous\_of\_moment}.
+\end{remark}
+
+\end{document}

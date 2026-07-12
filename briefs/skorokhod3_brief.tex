@@ -1,0 +1,156 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}
+\newcommand{\F}{\mathcal F}\newcommand{\Q}{\mathbb Q}\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief (Skorokhod campaign, 3 of $\sim$5):\\
+tightness on $D$ and Aldous's criterion}
+\date{drafted 8 July 2026 --- attach Task 2's output before sending}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} On the Polish space $\D = D([0,1],\R)$ of Tasks 1--2
+(\texttt{TypeDDecouplingSkorokhodBasic.lean},
+\texttt{TypeDDecouplingSkorokhodCompact.lean},
+\texttt{TypeDDecouplingSkorokhodComplete.lean}, attached --- the Polish
+instances live in the Complete module): characterize
+tightness of families of probability laws, and prove \textbf{Aldous's
+criterion}. New library-clean file (suggest
+\texttt{TypeDDecouplingSkorokhodTight.lean}); Mathlib imports only; do not
+modify the Basic/Compact files (adapter lemmas in the new file); whole project
+must build; standard axioms only. This task does NOT touch
+\texttt{prop\_aldous} --- the de-opaquing/wiring happens in Task 5 together
+with Mitoma (both need the same process-to-path-law plumbing).
+
+\section*{Mathlib assets (verified present --- use, do not rebuild)}
+
+\begin{itemize}
+\item Tightness: \texttt{MeasureTheory.IsTightMeasureSet} with
+\texttt{isTightMeasureSet\_iff\_exists\_isCompact\_measure\_compl\_le};
+Prokhorov BOTH directions
+(\texttt{isCompact\_closure\_of\_isTightMeasureSet},
+\texttt{isTightMeasureSet\_of\_isCompact\_closure}); Ulam's theorem
+(\texttt{isTightMeasureSet\_singleton} --- $\D$ is Polish, so its hypotheses
+hold); \texttt{IsTightMeasureSet.map}, \texttt{.subset}, \texttt{.union}.
+\item Stopping times: \texttt{MeasureTheory.IsStoppingTime} over any preorder
+(so $\iota=[0,1]\subset\R$ works), the stopping $\sigma$-algebra API,
+\texttt{stoppedValue}, max/min/const closure. CAVEAT: the hitting-time
+lemmas carry \texttt{[Countable $\iota$]} --- continuous-time hitting times
+must be built here (Tier 2).
+\item Adjacent (optional): \texttt{ProbabilityTheory.IsKolmogorovProcess}
+(moment-form regularity) --- relevant to the sanctioned moment-form
+corollary in Tier 3.
+\end{itemize}
+
+\section*{Tier 0 (inherited from Task 2): compactness sufficiency}
+
+Task 2 staged ALL the machinery for Billingsley Thm 12.3 but did not assemble
+it: using the partition lemma (\texttt{IsCadlag.exists\_modulus\_partition}),
+the step-function API (\texttt{stepFun}/\texttt{stepSkoro},
+\texttt{exists\_stepSkoro\_approx}), and the piecewise-linear time changes
+with slope control (\texttt{plLambda}, \texttt{TimeChange.slope\_bounds}),
+prove: a set $A\subseteq\D$ with $\sup_{f\in A}\sup_t|f(t)|<\infty$ and
+$\lim_{\delta\to0}\sup_{f\in A}w'_f(\delta)=0$ is totally bounded (finite
+$\eps$-nets of step functions on a fixed grid with values in a finite
+lattice), hence has compact closure (\texttt{CompleteSpace} is live). NOTE
+Task 2's convention: \texttt{cadlagModulus} requires EVERY cell longer than
+$\delta$ (no short last cell) --- state Tiers 0--1 against that convention.
+Import \texttt{TypeDDecouplingSkorokhodComplete} and
+\texttt{TypeDDecouplingSkorokhodCompact} (Basic alone lacks the instances).
+This tier is a MUST-HAVE.
+
+\section*{Tier 1: the tightness bridge (Billingsley Thm 13.2/16.3 analogue)}
+
+\begin{itemize}
+\item[(a)] \underline{Measurability primitives}: $f\mapsto\sup_t|f(t)|$ and
+$f\mapsto w'_f(\delta)$ are Borel on $\D$ (via countable reduction: sups over
+rationals using right-continuity; for $w'$, partitions with rational points
+suffice --- prove the rational-partition reduction as a lemma).
+\item[(b)] \underline{The bridge}: a family
+$S\subseteq\mathcal P(\D)$ is tight iff
+\[
+  \lim_{a\to\infty}\sup_{\mu\in S}\mu\{f:\sup_t|f(t)|\ge a\}=0
+  \quad\text{and}\quad
+  \forall\eps>0:\ \lim_{\delta\to0}\sup_{\mu\in S}
+  \mu\{f: w'_f(\delta)\ge\eps\}=0 .
+\]
+Sufficiency of the two conditions (the direction Aldous needs): choose $a$,
+$\delta_k$ making the bad sets small, intersect; the good set has compact
+closure by Task 2's compactness characterization; apply the
+compact-approximation iff. Necessity from compactness $\Rightarrow$ the
+characterization's uniform bounds (defer if it resists; sufficiency is the
+deliverable).
+\end{itemize}
+
+\section*{Tier 2: c\`adl\`ag hitting times are stopping times}
+
+For a filtration $(\F_t)$ on $\Omega$ and an adapted process $X$ with
+c\`adl\`ag paths: the oscillation stopping times used by Aldous's proof ---
+$\tau_0=0$, $\tau_{k+1}=\inf\{t>\tau_k:|X_t-X_{\tau_k}|\ge\eps\}$ --- are
+stopping times of the RIGHT-CONTINUOUS augmentation $(\F_{t^+})$. Route:
+right-continuity of paths reduces $\{\tau\le t\}$ to a countable condition
+over rationals (the infimum over $(q,t]\cap\Q$ of first-crossing events);
+state and prove exactly the instances Tier 3 consumes --- do NOT build a
+general d\'ebut theorem (that is a rabbit hole; the c\`adl\`ag$+$closed-threshold
+case is elementary).
+
+\section*{Tier 3: Aldous's criterion (Billingsley Thm 16.10)}
+
+\begin{theorem}[Aldous]
+Let $(X_n)$ be $\D$-valued random elements (equivalently: adapted c\`adl\`ag
+processes on $[0,1]$) with laws $\mu_n$. Assume:
+\begin{itemize}
+\item[(i)] \textup{(boundedness)}
+$\lim_{a\to\infty}\limsup_n\PP(\sup_t|X_n(t)|\ge a)=0$;
+\item[(ii)] \textup{(Aldous condition)} for every $\eps>0$,
+\[
+  \lim_{\delta_0\downarrow0}\ \limsup_n\
+  \sup_{\tau,\ \delta\le\delta_0}\ \PP\big(|X_n(\tau+\delta)-X_n(\tau)|\ge\eps\big)=0,
+\]
+the $\sup$ over stopping times $\tau\le1$ of $X_n$'s natural (right-continuous)
+filtration, $\tau+\delta$ truncated at $1$.
+\end{itemize}
+Then $\{\mu_n\}$ is tight on $\D$.
+\end{theorem}
+
+\noindent Route (Billingsley's, follow closely): from (ii), two consecutive
+oscillation times are rarely close --- for the iterated $\tau_k$ of Tier 2,
+$\PP(\tau_{k+1}-\tau_k\le\delta,\ \tau_{k+1}\le1)$ is uniformly small (use
+(ii) at $\tau_k$ with a randomized/averaged $\delta$ --- Billingsley (16.24)ff:
+the integral-over-$\delta$ trick converts the two-time condition into the
+increment bound; implement the averaging honestly); hence w.h.p.\ fewer than
+$K$ oscillation times, all separated by $>\delta$, and the partition by the
+$\tau_k$ witnesses $w'_{X_n}(\delta)\le2\eps$. Combine with (i) and Tier 1(b).
+Deliverable: \texttt{aldous\_tightness}, stated against
+\texttt{IsTightMeasureSet} of the pushforward laws on $\D$.
+
+Also deliver the SANCTIONED moment-form corollary (what downstream users
+verify in practice, and the fallback if the full criterion's averaging
+resists): if $\E|X_n(\tau+\delta)-X_n(\tau)|^2\le C\,\delta$ uniformly (or the
+\texttt{IsKolmogorovProcess}-style bound), then (ii) holds (Markov), hence
+tightness --- \texttt{aldous\_of\_moment}.
+
+\begin{remark}[hygiene and fallbacks]
+(1) The processes-vs-path-measures interface: work with $\D$-valued random
+variables ($\Omega\to\D$ measurable, laws via \texttt{Measure.map}) --- the
+identification of an adapted process with a $\D$-valued variable is Task 5's
+plumbing; here a $\D$-valued variable with its coordinate filtration is the
+honest setting; document.
+(2) Fallback ladder for Tier 3: full Aldous $\to$ Aldous with (ii) replaced by
+the moment form only $\to$ Tier 1(b) sufficiency alone (still a complete,
+consumable tightness criterion). Tier 1(b)-sufficiency and Tier 2 are
+must-haves.
+(3) Report: which rung of the ladder was reached; the measurability lemmas
+proved; any Billingsley-16 gaps found (the averaging argument is the likely
+spot).
+\end{remark}
+
+\end{document}

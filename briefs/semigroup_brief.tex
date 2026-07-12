@@ -1,0 +1,100 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\ellw}{\ell^\infty_w}
+
+\title{Formalization brief: discharging \texttt{lem\_free}'s residual\\
+(semigroup construction for the bounded generator)}
+\date{6 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the single bundled residual \texttt{sorry} in
+\texttt{lem\_free} (\texttt{TypeDDecouplingLCLT.lean}, attached; see
+\texttt{LEM\_FREE\_STATUS.md}, attached) by constructing the transition
+semigroup of the bounded generator and identifying \texttt{W.p} with it, so
+that the three dynamical facts (energy identity, Chapman--Kolmogorov,
+mass conservation / $p\le1$) become theorems. Do NOT modify
+\texttt{TypeDDecouplingNash.lean} (attached), the statement of
+\texttt{lem\_free}, or the structures; modify \texttt{...LCLT.lean} only at
+the residual. New library-clean file \texttt{TypeDDecouplingSemigroup.lean}
+encouraged. Whole project must build; standard axioms only.
+
+\section*{Tier 1: the semigroup of a bounded rate matrix}
+
+The forward generator: $(\mathcal A\mu)(y)=\sum_x\mu(x)\,\mathrm{rate}(x,y)
+-\mu(y)\sum_z\mathrm{rate}(y,z)$, with finite range $\varrho$ and exit rate
+$\le\Lambda$, is a \underline{bounded} linear operator (norm $\le2\Lambda$) on
+$\ell^1(\Z)$ (and on weighted spaces). Define $Q_t:=\exp(t\mathcal A)$ via
+Mathlib's exponential in the Banach algebra of continuous linear endomorphisms
+(\texttt{NormedSpace.exp}); $t\mapsto Q_t$ is a norm-differentiable semigroup
+($Q_{s+t}=Q_sQ_t$ from \texttt{exp\_add} for commuting elements;
+$\frac{d}{dt}Q_t=\mathcal AQ_t$). Set $q_t:=Q_t\delta_0$. Prove:
+\begin{itemize}
+\item[(a)] \underline{positivity}: $q_t\ge0$, via
+$\exp(t\mathcal A)=e^{-\lambda t}\exp\big(t(\mathcal A+\lambda I)\big)$ with
+$\lambda\ge2\Lambda$, the series $\exp(t(\mathcal A+\lambda I))$ having all
+terms positivity-preserving;
+\item[(b)] \underline{mass conservation}: $\sum_yq_t(y)=1$ (pair with
+$\mathbf 1$; the forward generator annihilates total mass:
+$\sum_y(\mathcal A\mu)(y)=0$);
+\item[(c)] \underline{$q_t\le1$ pointwise} from (a)+(b);
+\item[(d)] \underline{Chapman--Kolmogorov} from the semigroup property, in the
+two-point form needed by the Nash assembly (the kernel from a general starting
+point is $Q_t\delta_y$; relate by translating the residual's statement --- the
+walk is NOT translation-invariant, so carry the starting point explicitly);
+\item[(e)] \underline{energy identity}: $u(t)=\sum_x q_t(x)^2/m(x)$ is
+differentiable with $u'=-2\mathcal E(q_t)$ (norm-differentiability of $Q_t$
+makes differentiation under the sum legitimate; reversibility supplies the
+Dirichlet-form identity).
+\end{itemize}
+
+\section*{Tier 2: identification $p=q$}
+
+\texttt{W.p} satisfies the per-site forward ODE (the \texttt{IsTransitionKernel}
+field). Identify $p_t=q_t$ by uniqueness for the linear ODE:
+\begin{itemize}
+\item[(f)] Preferred route: $g(t):=Q_{-t}\,p_t$ (i.e.\ $\exp(-t\mathcal A)$
+applied to $p_t$) has $g'\equiv0$, so $g\equiv g(0)=\delta_0$, provided $p_t$
+is a norm-differentiable $\ell^1$-valued curve. If the interface provides only
+per-site differentiability and pointwise bounds, use instead:
+\item[(g)] weighted-Gronwall uniqueness: for $r:=p-q$, per-site ODE with
+finite-range bounded coefficients gives, in a weighted sup norm
+$\|r\|_w=\sup_x|r(x)|\,\theta^{|x|}$ ($\theta\in(0,1)$ fixed,
+operator norm $\le2\Lambda\theta^{-\varrho}$),
+$\|r_t\|_w\le2\Lambda\theta^{-\varrho}\int_0^t\|r_s\|_w\,ds$, whence $r\equiv0$
+by Gronwall --- USING whatever a-priori bound on $p$ the interface provides
+(nonnegativity, $p\le1$, or summability; inspect the actual fields). If the
+interface provides NO a-priori bound whatsoever, uniqueness is genuinely false
+in general; in that case document precisely which minimal bound is missing and
+leave the residual with that documentation --- do not fabricate.
+\end{itemize}
+
+\section*{Tier 3: discharge}
+
+Substitute $p=q$ into (a)--(e) and close the bundled residual in
+\texttt{lem\_free}; the project's term-level \texttt{sorry} count should drop
+by one (13 $\to$ 12), with \texttt{lem\_free} depending only on standard
+axioms. Report: which route (f)/(g) was used, which interface fields supplied
+the a-priori bound, and confirm \texttt{nash\_pointwise\_bound} was consumed
+unchanged.
+
+\begin{remark}[hygiene]
+(1) Search Mathlib first: \texttt{NormedSpace.exp}, semigroup derivative
+lemmas, Gronwall (\texttt{norm\_le\_gronwallBound\_of\_norm\_deriv\_right\_le}
+or the current name), positivity of operator exponentials. (2) Keep
+\texttt{TypeDDecouplingSemigroup.lean} free of project-specific imports
+(rate-matrix hypotheses as arguments), for potential upstreaming --- bounded
+jump-process semigroups on $\Z$ are of library-wide interest. (3) Constants
+free; no optimality. (4) $t=0$ and $t<0$ edge cases: the statement only needs
+$t\ge0$; $Q_{-t}$ in (f) is fine (bounded operator, group not just semigroup).
+\end{remark}
+
+\end{document}

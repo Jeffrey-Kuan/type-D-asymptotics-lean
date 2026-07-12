@@ -1,0 +1,138 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\eps}{\varepsilon}\newcommand{\Sch}{\mathcal{S}}
+\newcommand{\ip}[2]{\langle #1,#2\rangle}
+
+\title{Formalization brief (Mitoma campaign, 3b):\\
+the Hermite--Sobolev chain generates the Schwartz topology}
+\date{11 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Context.} Task M3a (\texttt{mitoma3a\_report.md},
+attached --- read it first) delivered
+\texttt{TypeDDecouplingHermite.lean}: the Hermite functions
+$h_n=c_nH_ne^{-x^2/4}$ as \texttt{hermiteBasis : HilbertBasis
+$\mathbb N$ $\R$ (Lp $\R$ 2 volume)}, with \texttt{hermiteFun\_mem\_schwartz}
+/ \texttt{hermiteSchwartz} and the coefficient functional on
+$\Sch(\R,\R)$. This task builds the countably-Hilbertian structure on
+$\Sch(\R,\R)$ that Mitoma's Lemma 3.2 (task M3c) will consume: the
+Hermite--Sobolev seminorms, their equivalence with the canonical Schwartz
+topology, and the explicit Hilbert--Schmidt summability between levels.
+Nothing here is probabilistic; it is the last hard-analysis task of the
+campaign, and most of its tools are now on the shelf.
+
+\medskip
+\noindent\textbf{Goal.} A NEW file
+\texttt{TypeDDecouplingHermiteSobolev.lean} (Mathlib imports plus
+\texttt{TypeDDecouplingHermite}, optionally
+\texttt{...SchwartzFrechet}/\texttt{...SchwartzDual}; no existing project
+file touched; whole project builds; standard axioms; no
+\texttt{axiom}/\texttt{sorry}). Write $\ip{\phi}{h_n}:=\int\phi h_n$
+(M3a's coefficient functional). Deliverables:
+
+\begin{itemize}
+\item[(1)] \textbf{The oscillator.} $A:\Sch(\R,\R)\to L[\R]\
+\Sch(\R,\R)$, $A\phi:=-\Delta\phi+(x^2/4+1/2)\cdot\phi$, assembled from
+Mathlib's \texttt{SchwartzMap.instLaplacian} (on $\R$, $\Delta=\partial^2$;
+if friction arises use $-\texttt{derivCLM}\circ\texttt{derivCLM}$) and
+\texttt{SchwartzMap.smulLeftCLM} (the multiplier $x\mapsto x^2/4+1/2$ has
+temperate growth --- polynomial). $A$ is a continuous linear map by
+construction; record also $A^r$ (iterate).
+\item[(2)] \textbf{Self-adjointness on $\Sch$:}
+$\int(A\phi)\psi=\int\phi(A\psi)$ for $\phi,\psi\in\Sch(\R,\R)$. The
+Laplacian part is Mathlib's
+\texttt{SchwartzMap.integral\_mul\_laplacian\_right\_eq\_left}; the
+multiplication part is pointwise symmetry. (Backup: the zero-hypothesis
+Schwartz IBP \texttt{SchwartzMap.integral\_mul\_deriv\_eq\_neg\_deriv\_mul}
+applied twice.)
+\item[(3)] \textbf{Eigenrelation:} $A\,h_n=(n+1)\,h_n$ (as Schwartz maps,
+i.e.\ pointwise). DERIVE the eigenvalue honestly from the Hermite
+identities --- our off-line computation gives, with M3a's convention
+$h_n=c_nH_ne^{-x^2/4}$ and probabilists' $H_n$:
+$-h_n''+(x^2/4)h_n=(n+\tfrac12)h_n$, hence eigenvalue $n+1$ for $A$; but
+the paper's catch history (catch \#2, \#8) mandates checking, not
+trusting. Ingredients to derive along the way (they are NOT in Mathlib;
+only \texttt{Polynomial.hermite\_succ} is): the derivative identity
+$H_n'=nH_{n-1}$ (induction from \texttt{hermite\_succ}), the three-term
+recurrence $xH_n=H_{n+1}+nH_{n-1}$, and the resulting NORMALIZED ladder
+identities, e.g.\ $x\,h_n=\sqrt{n+1}\,\alpha_{n}h_{n+1}+\sqrt n\,
+\beta_nh_{n-1}$-type and $h_n'=\dots$ with explicit coefficients of size
+$O(\sqrt{n+1})$ --- state them with whatever exact constants come out;
+what matters downstream is the $O(\sqrt{n+1})$ size.
+\item[(4)] \textbf{Coefficient decay:} for every $r\in\mathbb N$ there
+are $C_r$ and a finite seminorm set with
+$|\ip{\phi}{h_n}|\le(n+1)^{-r}\,\|A^r\phi\|_{L^2}\le(n+1)^{-r}C_r\cdot
+(\text{finite sup of Schwartz seminorms of }\phi)$. Route: (2)+(3) give
+$\ip{\phi}{h_n}=(n+1)^{-r}\ip{A^r\phi}{h_n}$; Bessel
+($|\ip{\psi}{h_n}|\le\|\psi\|_{L^2}$, from M3a's basis); and
+$\|\psi\|_{L^2}\le C(p_{0,0}(\psi)+p_{1,0}(\psi))$-type ($L^2$ dominated
+by weighted sup norms: $\int|\psi|^2\le\sup((1+x^2)|\psi|^2)\int
+(1+x^2)^{-1}$); finally continuity of the CLM $A^r$ (its seminorm bound).
+\item[(5)] \textbf{Growth of Hermite seminorms:} for each $(k,m)$ there
+are $C_{k,m},N_{k,m}$ with
+$p_{k,m}(h_n)\le C_{k,m}(n+1)^{N_{k,m}}$ (any explicit polynomial
+exponent is fine; do not chase optimality). Route: the ladder identities
+(3) express $x\cdot h_n$ and $h_n'$ in $\mathrm{span}\{h_{n\pm1}\}$ with
+$O(\sqrt{n+1})$ coefficients, so $x^k\partial^mh_n$ is a combination of
+$h_{n-k-m},\dots,h_{n+k+m}$ with $O((n+1)^{(k+m)/2})$ coefficients;
+close with the sup bound $\|h_j\|_\infty\le C(j+1)^{1/4}$ from the 1-D
+Agmon inequality $\|f\|_\infty^2\le2\|f\|_{L^2}\|f'\|_{L^2}$ (prove
+inline for Schwartz $f$: $f(x)^2=2\int_{-\infty}^xff'$, FTC with decay)
+together with $\|h_j\|_{L^2}=1$ and $\|h_j'\|_{L^2}=O(\sqrt{j+1})$
+(ladder again).
+\item[(6)] \textbf{Pointwise/seminorm expansion:}
+$\phi=\sum_n\ip{\phi}{h_n}h_n$ with convergence in EVERY Schwartz
+seminorm (hence uniform with all derivatives and weights): by (4) with
+large $r$ and (5), the tail $\sum_{n\ge N}|\ip{\phi}{h_n}|\,p_{k,m}(h_n)$
+vanishes; identify the limit with $\phi$ via $L^2$ convergence (M3a's
+\texttt{hermiteBasis\_hasSum\_repr}) plus continuity.
+\item[(7)] \textbf{Hermite--Sobolev seminorms and the equivalence.}
+$\|\phi\|_r^2:=\sum_n(n+1)^{2r}\ip{\phi}{h_n}^2$ (finite by (4)). Deliver:
+(a) \texttt{sobolevSeminorm r} is a seminorm on $\Sch(\R,\R)$, HILBERTIAN
+(record the inner product $\ip{\phi}{\psi}_r=\sum(n+1)^{2r}
+\ip{\phi}{h_n}\ip{\psi}{h_n}$), and CONTINUOUS w.r.t.\ the canonical
+topology (from (4) with $r+1$: $\|\phi\|_r^2\le C\cdot(\text{finite
+seminorm sup})^2\sum(n+1)^{-2}$);
+(b) the converse domination: for each $(k,m)$ there is $r$ with
+$p_{k,m}(\phi)\le C\,\|\phi\|_r$ for all $\phi$ (from (5)+(6):
+$p_{k,m}(\phi)\le\sum_n|\ip{\phi}{h_n}|p_{k,m}(h_n)\le\|\phi\|_r\,
+(\sum_n(n+1)^{2N_{k,m}-2r})^{1/2}$, choose $r>N_{k,m}+\tfrac12$).
+Together: the countable Hilbertian family $\{\|\cdot\|_r\}_{r\in\mathbb N}$
+generates the Schwartz topology (two-sided lemma-level domination is the
+deliverable; a \texttt{WithSeminorms} repackaging is welcome but
+optional).
+\item[(8)] \textbf{Hilbert--Schmidt data for M3c:} with
+$e^r_j:=(j+1)^{-r}h_j$ (the $\|\cdot\|_r$-orthonormal system):
+$\|e^r_j\|_q=(j+1)^{q-r}$ for $q\le r$, and the summability
+$\sum_j\|e^r_j\|_q^2<\infty$ whenever $r\ge q+1$ (any sufficient
+integer gap is fine; $r>q+\tfrac12$ is the sharp line). State this as a
+named lemma (\texttt{hermiteSobolev\_hs\_summable}) --- it is the
+nuclearity input that Mitoma's Lemma 3.2 consumes.
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) DERIVE all identities and eigenvalues; the brief's stated constants
+(eigenvalue $n+1$, ladder coefficient sizes, Agmon exponent $1/4$) are
+predictions to check, and only the POLYNOMIAL character of the growth
+matters downstream --- if a derived exponent differs, keep the honest one
+and say so in the report.
+(2) Fallback ladder: full delivery $\to$ (1)--(6) with (7b) for
+$(k,m)=(0,0)$ only, rest documented $\to$ honest report. No fabrication.
+(3) SEARCH FIRST: Bessel's inequality, \texttt{HilbertBasis} repr API,
+tsum comparison/Cauchy--Schwarz for series, polynomial
+\texttt{HasTemperateGrowth} instances.
+(4) Report as \texttt{mitoma3b\_report.md}: the derived identities with
+their exact constants, final statement names, and the (7)/(8) shapes M3c
+should import.
+\end{remark}
+
+\end{document}

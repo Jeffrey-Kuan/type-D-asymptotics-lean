@@ -1,0 +1,104 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
+
+\title{Formalization brief: \texttt{lem\_gauss} as the single-field instance\\
+of the proved martingale-problem architecture}
+\date{8 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry} at \texttt{lem\_gauss} in
+\texttt{TypeDDecouplingEW.lean} (attached). Two observations drive the design:
+(1) the paper itself derives Lemma 6.6 as ``the single-field case of
+Theorem~6.2,'' and Theorem 6.2's Gaussian machinery is now PROVED
+(\texttt{TypeDDecouplingMartingaleGaussian.lean}, attached; do not modify);
+(2) the current statement is a FIDELITY DEFECT (document as catch \#8): it
+takes a free $Y$ with no dynamical hypotheses and asserts OU convergence ---
+a false-universal-shaped placeholder, not a rendering of Lemma 6.6. Whole
+project must build; standard axioms only.
+
+\section*{Part 0: fidelity repair (mandatory)}
+
+Restate \texttt{lem\_gauss} with the faithful single-species hypotheses tying
+$Y$ to the WASEP dynamics, mirroring \texttt{thm\_mp}'s de-opaqued
+architecture: a single-field drift condition (the (D) analogue of
+\texttt{mpConvDrift}), a single-field bracket-realization condition (the (N)
+analogue of \texttt{mpConvBracket}: the pairings are charFun-realized as
+martingale-difference arrays with deterministic bracket
+$2\chi Dt\cdot\mathrm{sig}(\varphi)$, $\chi=\rho(1-\rho)$, with stopped
+companions), and the path-space bundle (an \texttt{MPPathBundle}-style field).
+Document: the previous free-$Y$ form did not assert the paper's lemma; the
+Dittrich--G\"artner citation moves to the docstring as the classical theorem
+this instantiates.
+
+\section*{Part 1: prove the restated lemma}
+
+From the restated hypotheses, the conclusion
+$\exists Y_{\mathrm{lim}}$, \texttt{convInLawDist} $\wedge$
+\texttt{isStationaryOU} follows by the SAME derivation as \texttt{thm\_mp}:
+\texttt{mpConvBracket\_gaussian\_fdd}-style invocation of
+\texttt{martingale\_charFun\_gaussian} (single field --- no joint/cross
+component needed) plus the path bundle. Reuse the \texttt{thm\_mp} proof
+structure; if a shared lemma serves both, factor it rather than duplicate.
+
+\section*{Part 2: the WASEP (N)-computation --- the genuinely new content}
+
+Prove, as standalone library-clean lemmas (suggest
+\texttt{TypeDDecouplingBracketN.lean}, or extend the Drift file's namespace
+style; do NOT modify existing files), the finite-$N$ facts that make the
+bracket hypothesis faithful for the actual single-species WASEP:
+\begin{itemize}
+\item[(a)] \underline{Mean:} for the single-species exclusion with rates
+$(1,q^2)$ under a Bernoulli($\rho$) product weight on the window, the
+integrated instantaneous bracket of the field pairing --- the normalized sum
+$\frac1N\sum_x\varphi'(x/N)^2\,\E[c_x(\eta)(\nabla_x\text{-increment})^2]$
+with $c_x$ the exclusion jump rates --- equals the explicit Riemann sum
+converging to $2\chi D\|\varphi'\|_{L^2}^2$ (compute the exact per-bond
+equilibrium factor: $\E[c_x] = (1+q^2)\rho(1-\rho)$-type; identify
+$D=(1+q^2)/2$-normalization consistently with \texttt{prop\_drift}'s $D$ ---
+derive, don't guess; any consistent convention documented).
+\item[(b)] \underline{Variance:} the fluctuation of the bracket functional has
+second moment $O(1/N)$ under the product weight --- the
+\texttt{corr\_second\_moment} pattern (attached Drift file): local functions,
+finite-range covariances, $(1/N^2)\cdot O(N)$ bookkeeping.
+\item[(c)] \underline{Time integration:} from (a)+(b), the time-integrated
+bracket over $[0,t]$ concentrates at $2\chi Dt\|\varphi'\|^2$ in $L^2$ under
+stationarity (equal-time Cauchy--Schwarz in time, as in \texttt{prop\_drift}'s
+correction term --- no mixing needed).
+\end{itemize}
+These are [P]-class results consumed by the restated hypothesis's
+documentation: the bundle field asserting the bracket realization cites (a)--(c)
+as the finite-$N$ ground truth, with only the Dynkin-bracket identification
+(the \texttt{dynkinBracketDef} convention) and the process-level pairing
+construction remaining as the documented citation content.
+
+\section*{Part 3: wiring}
+
+\texttt{thm\_ewmain} consumes \texttt{lem\_gauss} for its diagonal-noise
+input: thread the new hypotheses exactly as \texttt{hmp}/\texttt{hconc} are
+threaded (add bundle parameters, pass through). No other leaf touched;
+\texttt{thm\_mitoma}/\texttt{prop\_aldous} unchanged. Report: the restated
+hypothesis list, what (a)--(c) proved, the bundle contents, and the final
+count (target 3 $\to$ 2).
+
+\begin{remark}[hygiene]
+(1) The restated hypotheses must be SATISFIABLE and faithful --- each field a
+standard fact of the stationary WASEP field; say so per field, citing the
+paper location (Lemma 6.6's proof paragraph and \S6.1).
+(2) Constants/conventions: match \texttt{prop\_drift}'s $D$ and the paper's
+$2\chi D$ normalization; if the encoding's $\mathrm{sig}(\varphi)$ plays the
+role of $\|\varphi'\|^2$, keep it as data and state (a) against it.
+(3) Do not modify \texttt{TypeDDecouplingMartingaleGaussian.lean},
+\texttt{TypeDDecouplingDrift.lean}, or the CLT files; new lemmas go in the new
+file or the EW file.
+\end{remark}
+
+\end{document}

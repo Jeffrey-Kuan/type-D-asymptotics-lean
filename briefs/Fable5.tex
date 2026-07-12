@@ -1,0 +1,141 @@
+\documentclass{article}
+
+
+\title{Can a talented but unethical mathematician use GenAI to steal a colleague's research idea at a conference?}
+\author{Jeffrey Kuan}
+
+\usepackage{fullpage}
+ \usepackage{helvet}
+ \renewcommand{\familydefault}{\sfdefault}
+  
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+The rise of Generative AI models has raised serious ethical questions for mathematicians, at least for the subset of mathematicians who put up the pretense of pretending to care about ethics. An extremely unethical, but unfortunately not uncommon, action is to ``steal'' a colleague's research idea after hearing them outline the idea at a conference. Historically, doing so would still require time and effort to produce a plausibly correct preprint within a short timeframe. In this short note, I discuss an experiment in which I use Claude Code to quickly write a paper based on a rough sketch of a research idea. The specific research idea is to study the asymptotics of the type D ASEP using quantitative Boltzmann--Gibbs principles arising from orthogonal polynomial duality. The paper was started using the Opus 4.8 model between June 2nd and June 6th while I was at a conference in Edinburgh, and then continued using the Fable 5 model between June 10th and June 12th, and completed with Opus 4.8 between June 12th and June 14th. The mathematical results are surprising and of independent interest to the probability and mathematical physics community.     
+\end{abstract}
+
+Accessibility statement: this PDF is WCAG2.1AA compliant. 
+
+\subsection{Context}
+At research conferences, mathematicians commonly share their projects which are ``in progress,'' either at talks or in conversation. For example, a speaker can present their main result with the year as 2026+ to indicate that the preprint will appear on arXiv in the future. There is supposed to be a sense of mutual trust between the speaker and the audience: the audience trusts that the speaker has completed all the difficult and important steps in the proofs, and is working on exposition or more minor lemmas; the speaker trusts that nobody in the audience will use the talk to suddenly ``scoop'' the speaker shortly after the talk. Sometimes, an audience member finds out that they've been independently working on the same project as the speaker. Awkwardly, the ``time to preprint'' can be different, such as if the audience member had been planning to post next week while the speaker was planning to post in a few months. While different researchers have different ethical guidelines, my own philosophy is to try to communicate with openness, honesty, and transparency, and of course to give colleagues credit whenever it is due. 
+
+In contrast, an unethical mathematician could listen to a talk about work in progress, and then ``steal'' the paper based on an outline of the proof. If there is a difference between experience and mathematical maturity (for example, if the audience member is tenure--track and the speaker is a graduate student), it is plausible that the audience member could post a paper within a week of the talk, long before the speaker finishes the preprint. Tragically, it is often difficult for the speaker to prove that their idea was stolen, especially when there is a power differential between the involved parties. 
+
+With this context in mind, I asked myself this question: could an unethical mathematician use GenAI to steal a colleague's research idea? Of course, an answer to this question will depend on what the research idea is, but my answer to this question is ``yes.'' For this experiment, I played both the role of the unethical mathematician in the audience and the speaker presenting the idea. At this point, it is necessary to dive into the details of the research idea in question, which will be the text topic. 
+
+\subsection{A two--species interacting particle system from quantum groups}
+
+In my research area, called ``integrable probability'', the main overarching idea is to use algebraic structures to prove asymptotic results in probability. The most canonical example is that the asymmetric simple exclusion process (ASEP) has $U_q(sl_2)$ symmetry, an idea going back to \cite{Sch97}. My own research focuses on the high--level algebraic structures, perhaps to a fault (you can ask yourself how many self--described probabilists know what a quasi--triangular Hopf algebra is). 
+
+The interacting particle system considered in this project is the ``type D ASEP'', which was constructed by my undergraduate students using $U_q(so_{2n})$ symmetry. This model has two ``species'' of particles, which evolve on a one--dimensional lattice. Using the quantum group symmetry, they found that the type D ASEP has an orthogonal polynomial self--duality. While such results are perfect for an undergraduate level research paper, the obvious question from a probabilistic perspective is:
+
+``Does the type D ASEP \cite{REU2020,REU2022,REU2023,REU2024} have interesting asymptotics at large time?'' 
+
+Of course, an attempt to answer this question does require some analysis and probability background. For instance, one should know that the usual ASEP has Tracy--Widom GUE fluctuations at the KPZ \cite{KPZ} $t^{1/3}$ scaling  and that the SSEP (symmetric simple exclusion process) as Gaussian fluctuations at the EW \cite{EW} $t^{1/4}$ scaling. One should also know the ``weak asymmetry'' regime, where there is a crossover between EW and KPZ \cite{ACQ,GJ,GJS}. From a purely probabilistic perspective (i.e. not using any algebra), the first and second order Boltzmann Gibbs principles are used in the weak asymmetry regime. Such methods are ``classical'' \cite{KipnisLandim1999}, in the sense of being written in a textbook at least 25 years old, and not using algebraic methods. 
+
+For the purposes of this experiment, the ``outline'' to answer the above question is this:
+\\~\\
+``The type D ASEP has an orthogonal polynomial duality, which can be used to prove quantitative Boltzmann Gibbs principles. The basic idea is to use the orthogonality to project onto the fluctuation fields. See \cite{ACR,ACR2}.''
+\\~\\
+
+Claude Code was able to produce a 30 page paper with correct proofs (at least within human error) proving the results:
+
+\begin{itemize}
+\item For fixed asymmetry parameter, the asymptotics are two independent KPZ equations and two uncorrelated Tracy--Widom GUE distributions.
+
+\item In a weak asymmetry regime, when $q=1-c/T$, the asymptotics are two independent EW equations and two correlated Gaussians $G_1,G_2$. The covariance structure between the two Gaussians appears to be new; for example, the covariance between $G_1^+$ and $G_2^+$ is given by a function in $c$ which depends on the Bessel function and the Struve function.
+\end{itemize}
+
+Several colleagues in Edinburgh informed that such results would be surprising and interesting. 
+
+The ``unethical'' aspect of GenAI involves the false expertise that an author can claim. For example, if I were unethical, I could claim that the paper demonstrates my knowledge in the classical methods explained in \cite{KipnisLandim1999}. The reality is that I have very little knowledge of Boltzmann--Gibbs principles beyond that one quoted sentence above (the ``outline''), and even that was given to me by colleagues at Eindhoven in December 2022. As such, Generative AI can be used to ``lower'' the expertise needed to benefit from unethical behaviour. 
+
+
+\subsection{The usage from Claude Code}
+
+Between Tuesday June 2nd and Saturday June 6th, while I was in a conference in Edinburgh, I used Claude Code with the Opus 4.8 model to try to answer the above question. Opus 4.8 is a notable improvement on Opus 4.6 (which makes my previous paper \cite{Kuan2026} already outdated), most specifically in that Opus 4.8 demonstrates more honesty and humility than Opus 4.6. Claude Code allows the user to make prompts to their computer from their cell phone, which essentially allows people to ``work'' while sightseeing. In my particular case, I took a short hike in Holyrood Park, went to the John Knox House, had dinner at a BrewDog pub, went to the mall at Ocean Terminal, and just sent prompts back to Claude every 5-10 minutes. Sightseeing is a common conference activity, especially in interesting places like Edinburgh.
+
+The first prompt was to run numerics using Python (Claude Code runs locally, even when prompts are sent from the cell phone). The numerics did predict Gaussian random variables with nontrivial covariance, which was surprising to me at the time. The follow-up prompts can be roughly summarized as ``try random things to try to conjecture the covariance, and after each step use numerics to verify that the reasoning is accurate.'' Claude Opus 4.8 did this reasonably well, and was able to conjecture the Bessel--Struve formula, which matched the numerics. For full disclosure, it is unlikely I would've even come up with the conjecture in only a few days without Claude. 
+
+The next prompts asked Claude to rigorously prove the conjecture, again using numerics after each step. Again, the path was essentially trying random ideas. At times, some human expertise was beneficial -- for example, I told Claude that any attempt at ``multi-time'' statistics was almost certainly unnecessary and overcomplicated. However, Claude Opus 4.8 did make some embarrassing (to a human) mistakes, such as confusing ``independence'' and ``uncorrelated.'' 
+
+Fortunately, the Claude Fable 5 model was released on Tuesday, June 9th. Fable was able to identify several serious gaps in the proof written by Opus 4.8 during the dates of June 10th to 12th. There were some exposition issues -- the paper read like it was written by a physicist trying to write a math paper. On June 12th, Anthropic removed public access to Fable 5 due to security concerns from the United States federal government \cite{Anthropic}, so I completed the exposition issues using Opus 4.8 between June 12th and June 14th. 
+
+The final paper was essentially indistinguishable from human output, and completed in a very fast timeframe. If I were less ethical, I could have posted it to arXiv as my own work, and it is very unlikely that any of my colleagues would've detected that it was AI--generated, outside of the honest truth that Claude writes with better clarity than I do. Furthermore, I was able to generate the paper with very superficial knowledge of ``classical'' probabilistic methods. 
+
+\subsection{Acknowledgements and Disclosures}
+
+
+I would like to gratefully thank The Ohio State University’s Generative AI initiative, specifically OTDI (Office for Technology and Digital Innovation), ASC Tech (Arts and Sciences Technology); and  The Ximera Foundation for providing a Claude Max subscription.
+
+I acknowledge that some of this work was done on devices belonging to Texas A\&M University.
+
+The discussions about orthogonal polynomial duality and Boltzmann--Gibbs principle occurred at “RecentDevelopments in Stochastic Duality” in Eindhoven, with support from EURANDOM and the NWO grant 613.001.753 “Duality for interacting particle systems.” 
+
+The workshop in Edinburgh was ``Universality in the Kardar-Parisi­-Zhang class and random matrix theory.''
+
+
+
+\begin{thebibliography}{13}
+
+\bibitem{ACQ} Amir, G., Corwin, I. and Quastel, J. (2011), Probability distribution of the free energy of the continuum directed random polymer in 1 + 1 dimensions. Comm. Pure Appl. Math., 64: 466-537. 
+
+
+\bibitem{Anthropic} Anthropic, ``Statement on the US government directive to suspend access to Fable 5 and Mythos 5'', June 12 2026: https://www.anthropic.com/news/fable-mythos-access
+
+\bibitem{ACR} M. Ayala, G. Carinci, F. Redig, Quantitative Boltzmann–Gibbs principles via orthogonal polynomial duality, J. Stat. Phys. 171 (2018), 980–999; arXiv:1712.08492.
+
+\bibitem{ACR2} M. Ayala, G. Carinci, F. Redig, Higher order fluctuation fields and orthogonal duality polynomials, Electron. J. Probab. 26 (2021), 1–35; arXiv:2004.08412.
+
+\bibitem{REU2022} D. Blyschak, O. Burke, J. Kuan, D. Li, S. Ustilovsky, Z. Zhou, Orthogonal polynomial duality of a two–species asymmetric exclusion process, J. Stat. Phys. 190 (2023), Paper No. 101;
+arXiv:2209.11114.
+
+
+\bibitem{REU2024}
+
+E. Brodsky, E. R. Engel, C. Panish, L. Stolberg, Comparative analyses of the type D ASEP:
+stochastic fusion and crystal bases, arXiv:2407.21015.
+
+\bibitem{EW}
+S. F. Edwards, D. R. Wilkinson, The surface statistics of a granular aggregate, Proc. R. Soc. Lond. Ser. A 381 (1982), 17–31.
+
+
+\bibitem{GJ} Gonçalves, Jara, Nonlinear fluctuations of weakly asymmetric interacting particle systems, Arch. Ration. Mech. Anal. 212 (2014), 597–644.
+  
+\bibitem{GJS} Gonçalves, Jara, Simon, Second order Boltzmann–Gibbs principle for polynomial functions and applications, J. Stat. Phys. 166 (2017), 90–113.
+  
+  
+\bibitem{KPZ}
+M. Kardar, G. Parisi, Y. Zhang, Dynamic scaling of growing interfaces, Phys. Rev. Lett. 56 (1986), 889–892.
+
+\bibitem{KipnisLandim1999}
+C.~Kipnis and C.~Landim,
+\textit{Scaling Limits of Interacting Particle Systems},
+Grundlehren der mathematischen Wissenschaften, vol.~320,
+Springer, Berlin, 1999.
+
+\bibitem{Kuan2026}
+J. Kuan, Using Large Language Models as a Co-Author in Undergraduate Quantum Group Research, https://arxiv.org/abs/2605.02994
+
+
+
+\bibitem{REU2020}
+J.~Kuan, M.~Landry, A.~Lin, A.~Park, Z.~Zhou,
+Interacting particle systems with type D symmetry and duality, Houston J. Math. 48 (2022), no. 3, 499–538; arXiv:2011.13473.
+
+\bibitem{REU2023}
+
+E.~Rohr, K.~Sellakumaran Latha, A.~Yin, \emph{A type D asymmetric simple
+  exclusion process generated by an explicit central element of
+  $\mathcal U_q(so_{10})$}, Houston J.~Math.~\textbf{50} (2024), no.~2, 237--257;
+  arXiv:2307.15660.
+  
+  \bibitem{Sch97}
+
+Sch\"{u}tz, G.M. Duality relations for asymmetric exclusion processes. J Stat Phys 86, 1265–1287 (1997). 
+
+ 
+\end{thebibliography}
+\end{document}

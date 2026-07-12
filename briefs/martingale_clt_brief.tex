@@ -1,0 +1,120 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}
+\newcommand{\To}{\Rightarrow}
+
+\title{Formalization brief: the martingale central limit theorem\\
+(discrete core of Ethier--Kurtz Thm.~7.1.4)}
+\date{5 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} A new self-contained file (suggest
+\texttt{TypeDDecouplingMartingaleCLT.lean}) proving a martingale central limit
+theorem usable as the probabilistic input behind \texttt{prop\_twophase}
+(\texttt{TypeDDecouplingCrossover.lean}). The paper cites Ethier--Kurtz
+Theorem~7.1.4 (martingale functional CLT). The \underline{full} path-space statement
+(Skorokhod topology, c\`adl\`ag martingales) is out of scope: Mathlib has no
+Skorokhod space. The target is the \underline{fixed-time, finite-dimensional core},
+which is what the paper's application actually evaluates. Whole project must
+build; standard axioms only; do not modify existing files except (optionally) a
+docstring cross-reference in the Crossover file.
+
+\section*{Tier 1 (primary goal): McLeish's martingale CLT}
+
+\begin{theorem}[martingale difference array CLT; McLeish 1974]\label{thm:mcleish}
+For each $n$ let $(X_{n,j})_{j=1}^{k_n}$ be a square-integrable martingale
+difference array with respect to filtrations
+$(\mathcal F_{n,j})_j$: $\E[X_{n,j}\mid\mathcal F_{n,j-1}]=0$. Assume:
+\begin{itemize}
+\item[(a)] \textup{(vanishing maximal jump)}
+  $\max_{j}|X_{n,j}|\to0$ in probability, and
+  $\sup_n\E\big[\max_j X_{n,j}^2\big]<\infty$;
+\item[(b)] \textup{(bracket convergence)}
+  $\sum_{j=1}^{k_n}X_{n,j}^2\ \to\ \sigma^2$ in probability, $\sigma^2\ge0$
+  a deterministic constant.
+\end{itemize}
+Then $S_n:=\sum_{j=1}^{k_n}X_{n,j}\To N(0,\sigma^2)$ in distribution.
+\end{theorem}
+
+\noindent\textbf{Proof route (McLeish's product trick; recommended).} Set
+$T_n(u):=\prod_j\big(1+\mathrm iuX_{n,j}\big)$. Then:
+(1) $\E[T_n(u)]=1$ exactly, by the martingale property, expanding the product
+in the natural filtration order.
+(2) $\log(1+\mathrm ix)=\mathrm ix+\tfrac{x^2}2 r(x)$ with $|r|\le1$ bounded and
+$r(x)\to-1$ as $x\to0$, so
+$T_n(u)=\exp\big(\mathrm iuS_n+\tfrac{u^2}2\sum_jX_{n,j}^2\,r_j\big)$ where the
+correction converges: by (a)+(b),
+$\exp(\mathrm iuS_n)\,e^{u^2\sigma^2/2}-T_n(u)\to0$ in $L^1$
+(uniform integrability of $T_n(u)$ from
+$|T_n(u)|^2=\prod(1+u^2X_{n,j}^2)\le\exp(u^2\sum X_{n,j}^2)$ after a standard
+truncation of $\sum X_{n,j}^2$ at a constant, which is harmless by (b)).
+(3) Hence $\E[e^{\mathrm iuS_n}]\to e^{-u^2\sigma^2/2}$ for every $u$, and
+L\'evy continuity concludes. Mathlib's characteristic-function API
+(\texttt{charFun}, L\'evy's continuity theorem) is available; if the exact
+truncation lemma is painful, introducing the stopped array
+$\tilde X_{n,j}:=X_{n,j}\mathbf 1\{\sum_{i<j}X_{n,i}^2\le2\sigma^2\}$ (still a
+martingale difference array, equal to $X$ with probability $\to1$) is the
+standard device.
+
+\section*{Tier 2: the bivariate version the paper uses}
+
+\begin{theorem}[joint CLT with diagonal brackets]\label{thm:joint}
+Let $(X_{n,j}),(Y_{n,j})$ be martingale difference arrays with respect to a
+common filtration, each satisfying (a), with
+$\sum_jX_{n,j}^2\to\sigma_X^2$, $\sum_jY_{n,j}^2\to\sigma_Y^2$ and
+$\sum_jX_{n,j}Y_{n,j}\to0$, all in probability. Then
+$(\sum_jX_{n,j},\ \sum_jY_{n,j})\To N(0,\sigma_X^2)\otimes N(0,\sigma_Y^2)$
+(independent Gaussians).
+\end{theorem}
+
+\noindent Route: Cram\'er--Wold through Tier~1 --- for fixed $(a,b)$ the array
+$aX_{n,j}+bY_{n,j}$ satisfies (a),(b) with limit
+$a^2\sigma_X^2+b^2\sigma_Y^2$, so every linear combination is asymptotically
+normal with the product covariance; conclude by characteristic functions of the
+pair (two-dimensional L\'evy continuity, or directly: the 2d charFun evaluated
+at $(u,v)$ is the 1d charFun of the combined array at $1$).
+
+This is exactly the shape used by \texttt{prop:twophase}: the compensated jump
+martingales $(\bar S,\bar R)$ evaluated at time $T-\tau$, with diagonal brackets
+$2(1+q^2)(T-\tau)+O_\PP(\sqrt T)$ and cross bracket $\eps\Lambda_T=o_\PP(T)$,
+normalized by $\sqrt{2T}$.
+
+\section*{Tier 3 (stretch; only if Tiers 1--2 complete): continuous-time corollary}
+
+For a pure-jump square-integrable martingale $M$ with bounded jumps
+$|\Delta M|\le b$ and finitely many jumps on $[0,T]$ a.s.\ (the paper's setting:
+compensated finite-rate Markov jump processes), the discretization
+$X_{n,j}:=M(jT/n)-M((j-1)T/n)$ is a martingale difference array; conditions
+(a),(b) for it follow from $\langle M\rangle_T/c_T\to\sigma^2$ and
+$b/\sqrt{c_T}\to0$ under the normalization $M(T)/\sqrt{c_T}$. State and prove
+this reduction if the process encoding permits; otherwise state it as a named
+hypothesis bridging to Tier~2 and record the interface in a docstring. Do not
+attempt Skorokhod-space path convergence.
+
+\begin{remark}[interface and fallbacks]
+(1) Do not modify \texttt{prop\_twophase} or its \texttt{sorry}; if Tier~2
+completes, add only a docstring in the Crossover file noting that the
+probabilistic core (the joint martingale CLT) is now
+\texttt{thm\_joint} in the new file, with the time discretization and the
+pre/post-split decomposition remaining in the leaf.
+(2) Sanctioned fallbacks, in order: truncation lemma as a separate named
+lemma; conditions (a) strengthened to a deterministic bound
+$\max_j|X_{n,j}|\le b_n\to0$ (sufficient for the paper: jumps are bounded by
+$2/\sqrt{2T}$ after normalization); if L\'evy continuity in Mathlib lacks a
+needed form, state that single step as a named hypothesis and prove everything
+else.
+(3) Constants and generality are free: real-valued arrays suffice; no need for
+vector-valued beyond the bivariate Tier~2; $\sigma^2=0$ (degenerate limit) may
+be excluded by hypothesis $\sigma^2>0$ if it simplifies, since the paper's
+brackets are nondegenerate.
+\end{remark}
+
+\end{document}

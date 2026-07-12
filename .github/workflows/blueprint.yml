@@ -1,0 +1,64 @@
+name: Build blueprint site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Get Mathlib cache
+        run: lake exe cache get
+
+      - name: Build Lean project
+        run: lake build
+
+      - name: Install blueprint toolchain
+        run: |
+          sudo apt-get update && sudo apt-get install -y graphviz libgraphviz-dev
+          pip install leanblueprint
+
+      - name: Build blueprint web version
+        run: |
+          cd blueprint/src
+          plastex -c plastex.cfg web.tex
+
+      # v1: declaration checking is advisory; tighten once checkdecls is wired
+      - name: Check blueprint declarations (advisory)
+        continue-on-error: true
+        run: |
+          test -f blueprint/lean_decls && lake exe checkdecls blueprint/lean_decls || echo "checkdecls not wired yet (advisory)"
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: blueprint/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

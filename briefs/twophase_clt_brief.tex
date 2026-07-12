@@ -1,0 +1,143 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}
+\newcommand{\To}{\Rightarrow}
+
+\title{Formalization brief: the abstract two--phase mixture CLT\\
+(the array core of \texttt{prop:twophase})}
+\date{5 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} A new self-contained file (suggest
+\texttt{TypeDDecouplingTwoPhase.lean}) proving the abstract two--phase central
+limit theorem whose model instantiation is
+\texttt{TypeDDecoupling.prop\_twophase} in
+\texttt{TypeDDecouplingCrossover.lean}. Build on
+\texttt{TypeDDecouplingMartingaleCLT.lean} (attached): reuse
+\texttt{core\_charFun\_tendsto} / \texttt{joint\_charFun\_tendsto}; do not
+duplicate their proofs. Do NOT touch \texttt{prop\_twophase}'s statement or its
+\texttt{sorry}; a docstring cross-reference is the only permitted change to the
+Crossover file. Whole project must build; standard axioms only.
+
+\section*{Setting}
+
+For each $n$: a filtration $(\mathcal F_{n,j})_j$, a pair of square-integrable
+arrays $(X_{n,j},Y_{n,j})_{j=1}^{k_n}$ adapted with the martingale difference
+property $\E[X_{n,j}\mid\mathcal F_{n,j-1}]=\E[Y_{n,j}\mid\mathcal F_{n,j-1}]=0$,
+jumps deterministically bounded: $|X_{n,j}|,|Y_{n,j}|\le b_n\to0$. A
+\underline{change point} $m_n\in\{0,\dots,k_n\}$.
+
+\underline{Phase 1 (locked):} for $j\le m_n$, $X_{n,j}=Y_{n,j}$
+(the two components receive identical increments --- the paper's bound pair
+moving as one particle before the split).
+
+\underline{Phase 2 (decoupled):} for $j>m_n$, the brackets are diagonal in the
+limit.
+
+\section*{Tier 1 (primary): fixed change-point fraction}
+
+\begin{theorem}[two--phase CLT at deterministic $u$]\label{thm:twophase-u}
+Fix $u\in[0,1]$ and suppose $m_n/k_n\to u$ together with (all limits a.e.\ or
+in the a.e.-bounded form used in \textup{\texttt{MartingaleCLT}}):
+\[
+  \sum_{j\le m_n}X_{n,j}^2\to u,\qquad
+  \sum_{j>m_n}X_{n,j}^2\to 1-u,\qquad
+  \sum_{j>m_n}Y_{n,j}^2\to 1-u,\qquad
+  \sum_{j>m_n}X_{n,j}Y_{n,j}\to 0 .
+\]
+Then, with $S_n=\sum_jX_{n,j}$, $R_n=\sum_jY_{n,j}$, for all $a,c\in\R$,
+\[
+  \E\big[e^{\mathrm i(aS_n+cR_n)}\big]\ \longrightarrow\
+  \exp\Big(-\tfrac12\,\psi_u(a,c)\Big),\qquad
+  \psi_u(a,c):=(a+c)^2u+(a^2+c^2)(1-u),
+\]
+the characteristic function of
+$\big(\sqrt u\,\xi_0+\sqrt{1-u}\,\xi_1,\ \sqrt u\,\xi_0+\sqrt{1-u}\,\xi_2\big)$
+with $\xi_0,\xi_1,\xi_2$ i.i.d.\ $N(0,1)$ --- the standard bivariate normal of
+correlation $u$.
+\end{theorem}
+
+\noindent\textbf{Route (short).} Cram\'er--Wold through the existing Tier-1
+theorem: for fixed $(a,c)$ the combined array $Z_{n,j}:=aX_{n,j}+cY_{n,j}$ is a
+martingale difference array with jumps $\le(|a|+|c|)b_n\to0$ and bracket
+\[
+  \sum_jZ_{n,j}^2
+  =(a+c)^2\!\sum_{j\le m_n}\!X_{n,j}^2
+  +a^2\!\sum_{j>m_n}\!X_{n,j}^2+c^2\!\sum_{j>m_n}\!Y_{n,j}^2
+  +2ac\!\sum_{j>m_n}\!X_{n,j}Y_{n,j}
+  \ \to\ \psi_u(a,c),
+\]
+using $X=Y$ in phase 1; then apply
+\texttt{core\_charFun\_tendsto} at $\sigma^2=\psi_u(a,c)$ and evaluate its
+conclusion at $1$ (or at $(a,c)$ via the same device as
+\texttt{joint\_charFun\_tendsto}). Please also record the two edge cases
+$u=0$ (independent pair) and $u=1$ (identical pair) as instances.
+
+\section*{Tier 2: the mixture over a random change point}
+
+\begin{lemma}[mixture lemma]\label{lem:mix}
+Let $Z_n$ be $\R^2$-valued random vectors, $\mathcal G_n$ sub-$\sigma$-algebras,
+$U_n$ $\mathcal G_n$-measurable with $U_n\to U$ a.e., $U$ taking values in
+$[0,1]$. Suppose for each fixed $(a,c)$
+\[
+  \E\big[e^{\mathrm i(aZ_n^{(1)}+cZ_n^{(2)})}\,\big|\,\mathcal G_n\big]
+  \;-\;\exp\big(-\tfrac12\psi_{U_n}(a,c)\big)\ \longrightarrow\ 0
+  \quad\text{a.e.\ (or in } L^1).
+\]
+Then
+$\E[e^{\mathrm i(aZ_n^{(1)}+cZ_n^{(2)})}]\to
+\E\big[\exp(-\tfrac12\psi_U(a,c))\big]$: the limit is the $U$-mixture of
+correlation-$U$ bivariate normals --- the law of
+$\big(\sqrt U\xi_0+\sqrt{1-U}\xi_1,\ \sqrt U\xi_0+\sqrt{1-U}\xi_2\big)$ with
+$U$ independent of the $\xi$'s.
+\end{lemma}
+
+\noindent Route: tower property + dominated convergence (everything is bounded
+by $1$; $u\mapsto\psi_u(a,c)$ is continuous). This is deliberately elementary;
+the force of the hypothesis (the conditional Tier-1 applicability) remains with
+the caller. Also record the specialisation of the limit functional at
+$U\sim\min(\mathrm{Exp}(\lambda),1)$:
+$\E[U]=(1-e^{-\lambda})/\lambda$ (so the mixture's covariance is
+$\E[U]$, matching \texttt{thm\_closed}'s value at $\lambda=4c$) --- if
+covariance extraction from the charFun is awkward, state the $\E[U]$
+computation as a standalone lemma about $\min(\mathrm{Exp}(\lambda),1)$ and
+connect by docstring.
+
+\section*{Tier 3 (stretch): assembled statement}
+
+Combine Tiers 1--2: a two--phase array with a $\mathcal G_n$-measurable random
+change point $M_n$, $M_n/k_n\to U$ a.e., whose conditional brackets satisfy the
+Tier-1 hypotheses conditionally on $\mathcal G_n$ (as a named hypothesis if the
+conditional formalization of \texttt{core\_charFun\_tendsto} would require
+re-proving it conditionally --- do NOT re-prove; an unconditional-on-events or
+hypothesis-based route is sanctioned), concluding the mixture charFun limit.
+Then a docstring in the Crossover file recording: the probabilistic content of
+\texttt{prop\_twophase} (two-phase decomposition at the split time, mixture
+over $\tau/T\to U\sim\min(\mathrm{Exp}(4c),1)$) is now the assembled theorem;
+what remains in the leaf is the model bookkeeping (identifying the compensated
+jump martingales' discretized increments with the array and the bracket
+occupation estimates of \texttt{lem:occ}/\texttt{lem:rebind}).
+
+\begin{remark}[interface and fallbacks]
+(1) Reuse \texttt{MartingaleCLT} lemmas; if a hypothesis there is stated
+slightly differently than convenient (e.g.\ the bracket convergence form),
+add adapter lemmas in the new file rather than modifying the old one.
+(2) Sanctioned fallbacks: conditional-expectation hypotheses may be taken in
+$L^1$ or a.e.\ form, whichever is smoother; the mixture lemma may assume $U_n,U$
+take values in a compact interval (they do); Tier 3 may package the conditional
+Tier-1 hypothesis as one named hypothesis.
+(3) Degenerate cases: $\psi_u$ is a positive semidefinite quadratic form which
+degenerates at $(a,-a)$, $u=1$; \texttt{core\_charFun\_tendsto} at
+$\sigma^2=0$ (if it requires $\sigma^2>0$, handle $\psi=0$ directly: the sum
+converges to $0$ in $L^2$, so the charFun tends to $1$).
+\end{remark}
+
+\end{document}

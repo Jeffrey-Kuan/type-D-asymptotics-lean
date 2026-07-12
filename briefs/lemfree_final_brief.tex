@@ -1,0 +1,109 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\ee}{\mathcal E}
+
+\title{Formalization brief: closing \texttt{lem\_free} for good\\
+(the CKS program run on the exponential semigroup)}
+\date{7 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the residual \texttt{sorry} in \texttt{lem\_free}
+(\texttt{TypeDDecouplingLCLT.lean}, attached; see also the previous campaign's
+\texttt{SEMIGROUP\_RESIDUAL\_ANALYSIS.md}, attached). The previous attempt was
+blocked by two constraints that are now LIFTED: (i) a faithful a-priori
+hypothesis may be added to \texttt{lem\_free}'s statement (F3 precedent from
+the \texttt{lem\_Rlclt} campaign, documented as a fidelity repair); (ii) the
+strategy is inverted --- prove EVERYTHING for the exponential semigroup
+$Q_t:=\exp(t\mathcal A)$ (where it is provable), and touch \texttt{W.p} only
+once, through the identification. This dissolves the circularity recorded in
+the residual analysis: no property of \texttt{W.p} beyond the ODE, nonnegativity
+($t\ge0$), and the new a-priori bound is ever needed.
+
+Reuse (do not re-prove): \texttt{TypeDDecouplingSemigroup.lean} (attached:
+\texttt{exists\_forward\_generator}, \texttt{weight\_ratio},
+\texttt{VN\_int\_ineq}), \texttt{TypeDDecouplingNash.lean} (attached:
+\texttt{nash\_ineq}, \texttt{nash\_ode\_bound},
+\texttt{nash\_pointwise\_bound}). New library-clean file
+\texttt{TypeDDecouplingCKS.lean} encouraged. Only \texttt{lem\_free}'s
+declaration (and its documented hypothesis addition) may change in the LCLT
+file. Whole project must build; standard axioms only.
+
+\section*{Step 0: the faithful hypothesis (fidelity repair, documented)}
+
+Add to \texttt{lem\_free} the a-priori bound the interface lacks:
+$\forall t\ge0\ \forall x,\ W.p\,t\,x\le1$ (or, if more convenient for the
+Gronwall step, $\sum_xW.p\,t\,x\le1$ in the summable form --- choose ONE,
+justify the choice). Document: every true transition kernel satisfies it; the
+bare \texttt{IsTransitionKernel} does not force it (known interface gap;
+precedent: \texttt{lem\_Rlclt}'s F3). Do not add anything else.
+
+\section*{Step 1: the semigroup has every property (all proved, for ALL
+start points)}
+
+For the generator $\mathcal A$ of \texttt{W.rate} (bounded, norm $\le2\Lambda$,
+via \texttt{exists\_forward\_generator}), $Q_t=\exp(t\mathcal A)$, and
+$q^y_t:=Q_t\delta_y$ for every $y\in\Z$:
+\begin{itemize}
+\item[(a)] positivity $q^y_t\ge0$ ($t\ge0$): $e^{-\lambda t}\exp(t(\mathcal
+A+\lambda I))$ with $\lambda\ge2\Lambda$, positivity-preserving series;
+\item[(b)] mass $\sum_xq^y_t(x)=1$: pair with $\mathbf1$, forward generator
+kills total mass; hence with (a): $q^y_t\le1$ pointwise;
+\item[(c)] Chapman--Kolmogorov: the semigroup law $Q_{s+t}=Q_sQ_t$, written
+kernel-wise: $q^y_{s+t}(x)=\sum_zq^y_s(z)\,q^z_t(x)$;
+\item[(d)] energy identity: $u_y(t):=\sum_xq^y_t(x)^2/W.m(x)$ is
+differentiable with $u_y'=-2\ee(q^y_t)$ (norm-differentiability of
+$t\mapsto Q_t$ justifies differentiation under the sum; reversibility gives
+the Dirichlet form);
+\item[(e)] Nash ODE: conductance bound $\ee(f)\ge\tfrac\delta2\|\nabla
+f\|_2^2$ (drop non-NN terms) $+$ \texttt{nash\_ineq} $+$ the $\ell^1(m)$ bound
+from (b) give $u_y'\le-\kappa u_y^3$ with $\kappa=\kappa(c_1,c_2,\delta)$
+UNIFORM IN $y$; \texttt{nash\_ode\_bound} yields $u_y(t)\le C/\sqrt t$;
+\item[(f)] off-diagonal: (c) at $s=t$ $+$ Cauchy--Schwarz $+$ the $m$-bounds:
+$q^y_{2t}(x)\le C'\sqrt{u_y(t)u_x(t)}\le C''/\sqrt t$ --- note BOTH start
+points' on-diagonal decays enter, which is why (e)'s $y$-uniformity matters;
+this is exactly the input shape of \texttt{nash\_pointwise\_bound} (reuse it
+if its interface fits; otherwise prove the two-line assembly directly);
+small $t$: $q\le1$ and $1\le\sqrt2/\sqrt{1+t}$.
+\end{itemize}
+
+\section*{Step 2: identification and conclusion}
+
+$r_t:=W.p\,t-q^0_t$ satisfies the per-site forward ODE with $r_0=0$ and, by
+Step 0 and (b), $|r_t(x)|\le2$ pointwise. Weighted Gronwall (the route the
+residual analysis prepared): with $\|r\|_w:=\sup_x|r(x)|\theta^{|x|}$,
+$\theta\in(0,1)$, finite range $\varrho$ and exit rate $\Lambda$ give
+$\|r_t\|_w\le2\Lambda\theta^{-\varrho}\int_0^t\|r_s\|_w\,ds$ (the operator
+moves mass at most $\varrho$ sites, costing $\theta^{-\varrho}$ in weight;
+\texttt{weight\_ratio}/\texttt{VN\_int\_ineq} may serve here); since
+$\|r_s\|_w\le2$ a priori, Gronwall gives $r\equiv0$. (Justify the per-site
+integral form of the ODE from the interface's differentiability --- integrate
+the derivative; continuity of $t\mapsto p_t(x)$ follows from
+differentiability.) Then $W.p\,t\,r=q^0_t(r)\le C/\sqrt{1+t}$ by Step 1(f),
+which is \texttt{lem\_free}'s conclusion.
+
+\begin{remark}[hygiene]
+(1) Mind $\sum_z$ interchanges in (c)--(d): all sums are dominated by
+geometric/$\ell^1$ bounds; state and prove the summability lemmas rather than
+waving.
+(2) The Nash file's \texttt{nash\_pointwise\_bound} was designed for exactly
+the bundle (e)$+$(f)$+$(b); check its exact hypotheses and either consume it
+or prove the assembly inline --- do NOT modify the Nash file.
+(3) Sanctioned fallback: NONE on Steps 1(a)--(c) and Step 2 (they must be
+proved); if (d)'s differentiation-under-the-sum genuinely resists, that single
+identity may be a named, documented hypothesis --- but attempt it seriously
+first (the operator-norm differentiability of $\exp$ makes it a standard
+$\eps/3$ argument).
+(4) Report: whether (d) was proved; the final constant's dependencies; the
+term-level count (target 8 $\to$ 7, LCLT file sorry-FREE).
+\end{remark}
+
+\end{document}

@@ -1,0 +1,116 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\F}{\mathcal F}
+
+\title{Formalization brief: de-opaquing \texttt{thm\_mp}\\
+(Gaussian fdd core via the project's own martingale CLT; stopped-array
+adapter)}
+\date{7 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry} at \texttt{thm\_mp} in
+\texttt{TypeDDecouplingEW.lean} (attached), on the dynkin/Bethe playbook: the
+five opaques (\texttt{mpConvDrift}, \texttt{mpConvBracket},
+\texttt{distTight}, \texttt{convInLawDist}, \texttt{isStationaryOU}) make it
+unprovable by design. Restructure: PROVE the Gaussian
+finite-dimensional-distribution core with the project's own CLT machinery
+(\texttt{TypeDDecouplingMartingaleCLT.lean},
+\texttt{TypeDDecouplingTwoPhase.lean}, attached; do NOT modify them); bundle
+the path-space/topological content (which genuinely rides on the Mitoma/Aldous
+leaves) in one documented hypothesis bundle. CAUTION:
+\texttt{lem\_gauss} SHARES \texttt{convInLawDist}/\texttt{isStationaryOU} ---
+migrate its statement consistently (it keeps its \texttt{sorry}: it remains
+the Dittrich--G\"artner citation; a de-opaqued statement for it is a free
+side-benefit, not a proof obligation). Whole project must build; standard
+axioms only; all repairs documented.
+
+\section*{Part 1 (the centerpiece, new library-clean file
+\texttt{TypeDDecouplingMartingaleGaussian.lean}): martingales with
+deterministic bracket are Gaussian}
+
+\begin{theorem}[Gaussian charFun for a martingale with deterministic bracket]
+Let $M$ be an $\R$-indexed \texttt{MeasureTheory.Martingale} (real-valued,
+$M_0=0$) whose dyadic discretizations over $[0,t]$ satisfy, in the a.e.\
+form used by \texttt{core\_charFun\_tendsto}: the summed squared increments
+converge to a deterministic $\sigma^2(t)$, and the paths admit an a.e.\
+vanishing maximal-increment modulus ($\max_j|\Delta_jM|\to0$ a.e.\ as the
+mesh $\to0$; a faithful hypothesis for the continuous limiting objects).
+Then $\E[e^{\mathrm i\theta M_t}]=e^{-\theta^2\sigma^2(t)/2}$.
+\end{theorem}
+
+\noindent\underline{The stopped-array adapter (the one genuinely new tool).}
+\texttt{core\_charFun\_tendsto} requires a DETERMINISTIC jump bound $b_n$;
+path increments only vanish a.e. Bridge with the stopped array: for mesh $n$
+and threshold $b_n\downarrow0$ chosen with
+$\PP(\max_j|\Delta_jM|>b_n)\to0$ (possible from the a.e.\ modulus via
+Egorov/monotonicity --- extract the sequence), define
+$\tilde X_{n,j}:=\Delta_jM\cdot\mathbf 1\{\tau_n\ge j\}$ where $\tau_n$ is
+the first $j$ with $|\Delta_jM|>b_n$ ($\tau_n$ a stopping time of the
+discrete filtration): $\tilde X$ is still a martingale difference array
+(optional stopping at the discrete level --- prove it), deterministically
+bounded by $b_n$, agreeing with the true increments on an event of
+probability $\to1$; charFun limits transfer across vanishing events. Apply
+\texttt{core\_charFun\_tendsto} to $\tilde X$. (This adapter retroactively
+strengthens the whole CLT chain --- keep it general and reusable.)
+
+Also prove the JOINT version needed for fdds and independence: for
+$s<t$, the pair $(M_s,\,M_t-M_s)$ (and for two martingales $M,N$ with
+vanishing discretized cross-bracket, the pair $(M_t,N_t)$) has the product
+Gaussian charFun, via \texttt{joint\_charFun\_tendsto} with the same adapter.
+Conclude: all fdds are the centered Gaussian ones with independent increments
+and variance function $\sigma^2$; cross-bracket zero $\Rightarrow$
+independent components.
+
+\section*{Part 2: restructuring \texttt{thm\_mp}}
+
+De-opaque what Mathlib can express; bundle the rest:
+\begin{itemize}
+\item[(a)] Replace \texttt{SchwartzDistModel}'s pairing-level content by
+real-valued processes per test function (the paper consumes Theorem 6.2
+per-$\varphi$; if replacing the TYPE itself is disruptive, keep the type and
+de-opaque the PREDICATES on pairings). \texttt{mpConvDrift}/\texttt{mpConvBracket}
+become real statements about the pairings' Dynkin decompositions
+(drift $\to D\,Z(\Delta\varphi)$, bracket $\to2\chi Dt\|\partial_x\varphi\|^2$
+--- state against the objects the file already threads to
+\texttt{thm\_ewmain}).
+\item[(b)] \texttt{isStationaryOU} de-opaqued at the fdd/charFun level:
+Gaussian pairings with the OU covariance structure --- take the covariance
+data as explicit fields (stationarity, the variance $\chi\|\varphi\|^2$-type
+normalisation, the semigroup decay as a covariance-function hypothesis)
+rather than constructing the heat semigroup on $\mathcal S$; document.
+\item[(c)] Conclusion split: the GAUSSIAN/uniqueness content --- any process
+satisfying the (a)-hypotheses has the OU Gaussian fdds per test function,
+with independence under vanishing cross-bracket --- is PROVED from Part 1.
+The existence-of-limit/convergence-in-law-on-path-space content (which is
+what \texttt{distTight}/\texttt{convInLawDist} carried, and which rides on
+the Mitoma/Aldous leaves) enters as ONE documented bundle \texttt{hmp},
+threaded to \texttt{thm\_ewmain} like \texttt{hconc}/\texttt{hcont}.
+\item[(d)] \texttt{lem\_gauss}: restate against the new de-opaqued
+definitions, KEEPING its \texttt{sorry} (the DG citation); its docstring
+gains the note that its statement is now expressed in real objects.
+\item[(e)] \texttt{thm\_ewmain} must still elaborate (minimal threading).
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) Do not modify the MartingaleCLT/TwoPhase files; the adapter lives in the
+new file. (2) The a.e.\ modulus and bracket-convergence hypotheses in Part 1
+must be FAITHFUL for continuous Gaussian limits --- say so in docstrings; do
+not require path continuity itself if the weaker modulus suffices.
+(3) Sanctioned fallbacks: the joint/two-martingale version may take the
+common-refinement bookkeeping as a named lemma with a documented proof
+sketch ONLY if it genuinely resists --- the single-$M_t$ Gaussian charFun
+and the stopped-array adapter must be proved outright. (4) Report: what
+\texttt{hmp} contains; which Part-1 statements were proved; the final count
+(target 4 $\to$ 3).
+\end{remark}
+
+\end{document}

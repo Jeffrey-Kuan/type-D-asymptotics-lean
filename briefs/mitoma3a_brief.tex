@@ -1,0 +1,129 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\eps}{\varepsilon}\newcommand{\Sch}{\mathcal{S}}
+
+\title{Formalization brief (Mitoma campaign, 3a):\\
+the Hermite functions as a Hilbert basis of $L^2(\R)$}
+\date{10 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Context.} The Mitoma campaign's remaining probabilistic
+step (Mitoma 1983, Lemma 3.2: uniform confinement of $\Sch'$-valued paths
+in a dual ball) irreducibly requires the countably-Hilbertian nuclear
+structure of $\Sch(\R)$: a chain of Hilbertian seminorms with
+Hilbert--Schmidt embeddings. This task builds its foundation, and the
+single most upstream-worthy missing item in this area: the Hermite
+functions as a complete orthonormal system of $L^2(\R)$. Mathlib has the
+Hermite POLYNOMIALS with the Rodrigues formula
+(\texttt{Polynomial.hermite\_eq\_deriv\_gaussian},
+\texttt{Polynomial.deriv\_gaussian\_eq\_hermite\_mul\_gaussian}, in
+\texttt{Mathlib.RingTheory.Polynomial.Hermite.Gaussian} --- verified at
+our pin) but NO orthogonality, NO completeness, NO Hermite functions.
+
+\medskip
+\noindent\textbf{Goal.} A NEW self-contained file
+\texttt{TypeDDecouplingHermite.lean} (Mathlib imports only; no existing
+project file touched; whole project must build; standard axioms only; no
+\texttt{axiom}/\texttt{sorry}). Convention: probabilists' Hermite
+polynomials $H_n$ (Mathlib's \texttt{Polynomial.hermite}, monic, weight
+$e^{-x^2/2}$). Deliverables:
+
+\begin{itemize}
+\item[(1)] \textbf{Hermite functions.} $h_n(x):=c_n\,H_n(x)e^{-x^2/4}$
+--- CHECK THE WEIGHT CONVENTION CAREFULLY: the requirement is
+$\int h_mh_n\,dx=\delta_{mn}$ with respect to LEBESGUE measure, i.e.\
+$h_n=c_nH_n(x)e^{-x^2/4}$ if one keeps $H_n$ orthogonal w.r.t.\
+$e^{-x^2/2}dx$; any equivalent normalization is fine as long as the API
+records $\|h_n\|_2=1$ and the span facts below. $c_n=(n!\sqrt{2\pi})^{-1/2}$
+for the monic probabilists' convention --- but DERIVE the constant
+honestly rather than trusting this brief. Basic API: smoothness, Schwartz
+decay ($h_n$ is a polynomial times a Gaussian, hence in $\Sch(\R,\R)$ ---
+provide \texttt{hermiteFun\_mem\_schwartz} or the \texttt{SchwartzMap}
+bundling, which task M3b will consume), derivative/recurrence identities
+as needed.
+\item[(2)] \textbf{Orthogonality:}
+$\int_\R H_m(x)H_n(x)e^{-x^2/2}\,dx=\delta_{mn}\,n!\sqrt{2\pi}$ (again:
+derive the constant). Route: Rodrigues
+(\texttt{deriv\_gaussian\_eq\_hermite\_mul\_gaussian}) $+$ $n$-fold
+integration by parts (for $m\le n$: $\int H_m\cdot\partial^n(e^{-x^2/2})
+=(-1)^n\int\partial^n(H_m)\,e^{-x^2/2}$, boundary terms vanish by
+polynomial-times-Gaussian decay; $\partial^nH_m=0$ for $m<n$ and $=n!$
+for $m=n$ by monicity and \texttt{natDegree\_hermite}); the Gaussian
+integral $\int e^{-x^2/2}=\sqrt{2\pi}$ is on Mathlib's shelf. Mathlib's
+\texttt{integral\_deriv\_mul\_eq\_sub}-style parts lemmas and the
+integrability of polynomial-times-Gaussian functions
+(\texttt{integrable\_pow\_mul\_exp\_neg\_mul\_sq} or current name) carry
+this.
+\item[(3)] \textbf{Completeness} (the analytic heart): if $f\in L^2(\R)$
+satisfies $\int f\,h_n=0$ for all $n$, then $f=0$ a.e. Equivalently
+(derive): the span of $\{h_n\}$ is dense in $L^2(\R)$. Route (Fourier,
+no complex-analysis library needed):
+\begin{itemize}
+\item Set $g:=f\cdot e^{-x^2/4}$ (with the convention of (1); adjust
+consistently). Then $g\in L^1\cap L^2$ (Cauchy--Schwarz against the
+Gaussian) and $\int g(x)x^n\,dx=0$ for every $n$ (the span of
+$H_0,\dots,H_n$ is exactly that of $1,x,\dots,x^n$ by monicity and
+degree).
+\item Fourier transform: $\hat g(\xi)=\int g(x)e^{-2\pi ix\xi}\,dx$.
+Expand the exponential as a power series and integrate term by term ---
+justified by dominated convergence with the bound
+$\int|g(x)||x|^n\,dx\le\|f\|_2\big(\int x^{2n}e^{-x^2/2}\,dx\big)^{1/2}
+=\|f\|_2\,((2n-1)!!\sqrt{2\pi})^{1/2}$, whose growth loses to $n!$:
+$\sum_n\frac{|2\pi\xi|^n}{n!}\sqrt{(2n-1)!!}<\infty$ for EVERY $\xi$
+(ratio test; $(2n-1)!!\le(2n)!!=2^nn!$ gives summand
+$\le(2\pi|\xi|)^n\,2^{n/2}/\sqrt{n!}$). Hence $\hat g(\xi)=
+\sum_n\frac{(-2\pi i\xi)^n}{n!}\int g(x)x^n\,dx=0$ for every $\xi$.
+\item $\hat g\equiv0$ with $g\in L^1$ forces $g=0$ a.e.: use Mathlib's
+Fourier inversion (\texttt{MeasureTheory.Integrable.fourier\_inversion},
+at our pin) or any available injectivity statement for the $L^1$ Fourier
+transform (SEARCH FIRST --- e.g.\ a
+\texttt{fourierIntegral}-vanishing-implies-zero lemma may exist). Then
+$f=0$ a.e.
+\end{itemize}
+\item[(4)] \textbf{Packaging:} a Hilbert basis
+\texttt{hermiteBasis : HilbertBasis $\mathbb N$ $\R$ (Lp $\R$ 2 volume)}
+(orthonormal by (1)/(2), dense span by (3); Mathlib's
+\texttt{HilbertBasis.mk} from orthonormality $+$ topological span; the
+torus Fourier basis \texttt{UnitAddTorus.mFourierBasis} is a structural
+precedent). API: \texttt{hermiteBasis\_apply} (it IS $h_n$ as an
+$L^2$ element), and the Parseval consequences
+(\texttt{HilbertBasis} gives these generically --- just confirm they
+elaborate for later tasks: $\|f\|_2^2=\sum_n\langle f,h_n\rangle^2$ and
+$f=\sum_n\langle f,h_n\rangle h_n$ in $L^2$).
+\item[(5)] \textbf{Bridge lemma for M3b} (cheap here, awkward later):
+for $\phi\in\Sch(\R,\R)$, the coefficient
+$\langle\phi,h_n\rangle_{L^2}=\int\phi h_n$ is well-defined and the map
+$\phi\mapsto\langle\phi,h_n\rangle$ is a continuous linear functional on
+$\Sch$ (each $h_n\in\Sch$; the pairing is dominated by finitely many
+Schwartz seminorms --- Mathlib's \texttt{SchwartzMap.integralCLM} /
+\texttt{toLpCLM} machinery may give this immediately; SEARCH FIRST).
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) DERIVE all normalization constants; this brief's $c_n$ and the
+$\delta_{mn}n!\sqrt{2\pi}$ are stated from the classical literature and
+must be checked, not assumed (the paper's own catch history includes a
+factor-convention error --- catch \#2).
+(2) Fallback ladder: full delivery $\to$ (1)+(2)+(4-as-orthonormal-family)
+with completeness (3) as a documented residual $\to$ honest report. No
+fabrication; if the termwise-integration bound resists, report the exact
+gap.
+(3) SEARCH FIRST throughout: parts lemmas, Gaussian moment integrals
+($\int x^{2n}e^{-ax^2}$ has a closed form on the shelf ---
+\texttt{integral\_pow\_mul\_exp\_neg\_mul\_sq} or similar), $L^1$-Fourier
+injectivity, \texttt{HilbertBasis.mk} exact signature.
+(4) Report as \texttt{mitoma3a\_report.md}: final normalizations, the
+completeness route that worked, declaration names, and which Mathlib
+lemmas carried (2) and (3).
+\end{remark}
+
+\end{document}

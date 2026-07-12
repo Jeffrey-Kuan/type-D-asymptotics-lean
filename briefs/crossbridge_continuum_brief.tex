@@ -1,0 +1,94 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+
+\title{Formalization brief: the crossbridge continuum limit\\
+(assembly from the machine-checked finite-$L$ core), plus the
+\texttt{conj\_cov} repair}
+\date{7 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal (two independent parts).} Part A: remove the
+\texttt{sorry} at \texttt{lem\_crossbridge} in
+\texttt{TypeDDecouplingCrossover.lean} (attached) by proving the $\Z$ identity
+as the LIMIT of the already-proved finite-$L$ identities
+(\texttt{TypeDDecouplingCrossbridge.lean}, attached), with the genuinely
+IPS-level input isolated in one documented hypothesis bundle. Part B: repair
+\texttt{conj\_cov} in \texttt{TypeDDecouplingTracyWidom.lean} (attached).
+Whole project must build; standard axioms only; all restructurings documented
+(fidelity-repair convention).
+
+\section*{Part A: the continuum crossbridge}
+
+The finite-$L$ identity is machine-checked for EVERY $L$
+(\texttt{crossbridge\_finiteL}, with its documented interlacing hypothesis ---
+thread it consistently, do not weaken or re-prove). The continuum statement
+asserts the same identity on $\Z$. Restructure into:
+\begin{itemize}
+\item[(i)] \underline{$\eta$-side convergence --- the bundle.} The convergence
+of the observable
+$\mathrm{Obs}_L(s,a)\to\mathrm{Obs}_\Z(s,a)$ (the truncated-block process's
+joint $q$-Laplace observable to the infinite-volume one) is the
+finite-propagation coupling estimate of the paper's proof; the infinite-volume
+process exists only at the opaque/hypothesis level in the encoding, so this
+enters as ONE named, documented, faithful hypothesis bundle (\texttt{hcont}),
+field-by-field in the \texttt{hproc}/\texttt{htwo} style, citing the standard
+finite-speed coupling. Do NOT attempt to build infinite-volume IPS theory.
+\item[(ii)] \underline{Dual-side convergence --- PROVE IT.} The right side is a
+hitting probability of the TWO-PARTICLE dual --- a countable-state walk with
+bounded finite-range generator, i.e.\ semigroup territory
+(\texttt{TypeDDecouplingSemigroup.lean} machinery; re-derive locally if
+imports are awkward). Prove $\PP_L\to\PP_\Z$: with $A_L$ the finite-box
+generator (reflecting/absorbing per the encoding) and $A$ the full one,
+Duhamel gives
+$\|(e^{tA_L}-e^{tA})\delta\|_{\ell^1}\le\int_0^t\|e^{(t-s)A_L}(A_L-A)
+e^{sA}\delta\|\,ds$; $(A_L-A)$ is supported at distance $\ge L$-ish from the
+origin, and the tail of $e^{sA}\delta$ is superexponentially small by the
+ELEMENTARY finite-speed bound: $(A^n\delta)(x)=0$ for $|x|>n\varrho$, so
+$e^{sA}\delta(x)\le\sum_{n\ge|x|/\varrho}(s\|A\|)^n/n!$ --- a series-tail
+estimate, no probability needed. Conclude the hitting-probability convergence
+(the hitting event is a fixed set; express via the kernel sums the encoding
+uses).
+\item[(iii)] \underline{Assembly --- PROVE IT.} For every $L$: finite-$L$
+identity (proved) $+$ (i) $+$ (ii) $\Rightarrow$ the two sides of the $\Z$
+identity differ by $\eps(L)\to0$, hence are equal. Pure limit argument.
+\end{itemize}
+Consumers: \texttt{thm\_cross} consumes \texttt{lem\_crossbridge} --- thread
+\texttt{hcont} exactly as \texttt{htwo} is threaded. Do not modify the
+Crossbridge file.
+
+\section*{Part B: \texttt{conj\_cov} is a conjecture, not an assumption}
+
+\texttt{conj\_cov} is an OPEN CONJECTURE encoded as a \texttt{sorry}-ed
+theorem; it has ZERO consumers (verified). A sorried theorem formally
+ASSUMES its statement; the honest encoding of a conjecture is a named
+$\mathrm{Prop}$-valued definition with no proof and no \texttt{sorry}.
+Repair (document as the project's seventh fidelity repair): replace the
+theorem by
+\texttt{def covConjecture (q :\ \R)\ ...\ :\ Prop :=} (the same statement),
+with a docstring retaining: its open status, the Monte Carlo evidence
+($c(1/2)=0.099\pm0.003$, the $\sqrt s$ scaling window, the $s^{-1/6}$
+correlation decay), and the obstruction (the joint $q$-moment tower). Nothing
+else in the file changes.
+
+\begin{remark}[hygiene]
+(1) Part A's bundle (i) must contain ONLY $\eta$-side approximation facts;
+if the encoding's infinite-volume observable is itself opaque, state the
+bundle against it faithfully --- but (ii) and (iii) must be proved outright.
+(2) If the encoding's finite-$L$ dual differs from the $\Z$ dual's
+restriction (boundary convention), reconcile inside the proof of (ii), not by
+changing the Crossbridge file.
+(3) Report: what \texttt{hcont} contains field-by-field; whether (ii) was
+proved outright; the final count (target 6 $\to$ 4: Crossover and TracyWidom
+files both \texttt{sorry}-free).
+\end{remark}
+
+\end{document}

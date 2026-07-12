@@ -1,0 +1,114 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief (Skorokhod campaign, 5 of $\sim$6):\\
+Aldous's criterion, corrected formulation}
+\date{9 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Prove Aldous's tightness criterion on
+$\D=D([0,1],\R)$, in the OUTER-MEASURE formulation that Task 4's findings
+force. Files attached: Basic, Tight, Measurable (and Complete's instances
+via import); do not modify them. New library-clean file
+\texttt{TypeDDecouplingSkorokhodAldous.lean}. Mathlib imports only; whole
+project must build; standard axioms only; \texttt{prop\_aldous} untouched
+(next task's wiring).
+
+\section*{Design constraints from Tasks 3--4 (read carefully)}
+
+\begin{itemize}
+\item \underline{Never require $w'$ to be measurable.} Task 4 proved the
+modulus is NOT captured by rational partitions (irrational-jump
+counterexample, documented in the Measurable file) and its level sets are
+likely only universally measurable. The assembly must therefore produce, for
+each $n$ and $\delta$, an explicitly MEASURABLE event $G_{n,\delta}$
+(constructed from the \texttt{crossTime} stopping times and coordinate
+evaluations, all measurable by Task 4's core) with
+$G_{n,\delta}\subseteq\{w'_{X_n}(\delta)\le2\eps\}$ and
+$\PP(G_{n,\delta}^c)$ small. Task 3's bridge
+\texttt{isTightMeasureSet\_of\_bdd\_of\_modulus} consumes exactly such outer
+bounds (it was engineered on monotonicity/subadditivity) --- check its exact
+hypothesis shape and, if it demands slightly different packaging, add an
+adapter lemma in the new file rather than re-proving it.
+\item \underline{The averaging device is a raw integral, not a measure.}
+LeanSearch recon: \texttt{ProbabilityTheory.uniformOn} is the FINITE-SET
+uniform (zero on intervals) --- do not touch it. Implement Billingsley
+(16.24)ff as
+$\frac1{2\delta_0}\int_0^{2\delta_0}\PP(|X(\tau+\delta)-X(\tau)|\ge\eps)\,
+d\delta$ with plain (interval) Lebesgue integrals; the swap tools exist:
+\texttt{MeasureTheory.intervalIntegral\_integral\_swap} (the exact shape) and
+the \texttt{lintegral\_prod}/Tonelli family for the indicator route. No
+product-space stopping-time theory is needed anywhere.
+\item \underline{No reusable chaining exists} (recon: the
+\texttt{IsKolmogorovProcess} internals are not exposed), so the
+adjacent-moment criterion is NOT the easy alternative --- full Aldous is
+primary; the moment corollary comes from it by Markov.
+\end{itemize}
+
+\section*{Tier 1: the two-time estimate (Billingsley's averaging)}
+
+For a $\D$-valued random element $X$ with its coordinate filtration, a
+stopping time $\tau\le1$ (Task 3's \texttt{crossTime} instances), and
+$\eps,\delta_0>0$, define
+$\alpha(\delta_0,\eps):=\sup_{\tau,\ \delta\le\delta_0}
+\PP(|X(\tau+\delta)-X(\tau)|\ge\eps)$ (the Aldous quantity; $\tau+\delta$
+truncated at $1$). Prove the consecutive-crossing bound: for the iterates
+$\tau_{k+1}=\mathrm{crossTime}$ after $\tau_k$ at threshold $\eps$,
+\[
+  \PP\big(\tau_{k+1}-\tau_k\le\delta_0,\ \tau_{k+1}\le1\big)
+  \ \le\ C\,\alpha(2\delta_0,\eps/2)
+\]
+via the averaged intermediate time: on the event, for EVERY
+$\delta\in[\delta_0,2\delta_0]$, $\tau_k+\delta$ lies past $\tau_{k+1}$, and
+$|X(\tau_{k+1})-X(\tau_k)|\ge\eps$ forces
+$|X(\tau_k+\delta)-X(\tau_k)|\ge\eps/2$ OR
+$|X(\tau_k+\delta)-X(\tau_{k+1})|\ge\eps/2$; average the two applications of
+the Aldous condition over $\delta$ (Fubini/Tonelli on the indicator ---
+follow Billingsley (16.24)--(16.29) closely; both $\tau_k$ and $\tau_{k+1}$
+are stopping times, and $\tau_{k+1}$-plus-constant is again admissible in
+$\alpha$).
+
+\section*{Tier 2: few crossings $\Rightarrow$ modulus control, on a
+measurable event}
+
+From Tier 1 and induction: w.h.p.\ the number of $\eps$-crossings before time
+$1$ is at most $K$ and consecutive crossings are $>\delta$-separated ---
+an explicitly measurable event $G$ (finitely many conditions on
+\texttt{crossTime} values and evaluations). On $G$, the partition by the
+crossing times witnesses $w'_X(\delta)\le2\eps$ (path-by-path lemma against
+Task 2's \texttt{cadlagModulus}: on each cell between consecutive crossings
+the oscillation from the left endpoint is $\le2\eps$ --- mind the every-cell
+$>\delta$ convention: merge or extend short terminal cells per the convention
+documented in Compact, or bound via a sub-partition argument).
+
+\section*{Tier 3: assembly}
+
+\texttt{aldous\_tightness}: conditions (i) (sup-norm boundedness in
+probability) and (ii) ($\alpha(\delta_0,\eps)\to0$ as $\delta_0\to0$,
+uniformly in $n$) imply \texttt{IsTightMeasureSet} of the laws --- combine
+Tiers 1--2 with the bridge. Then \texttt{aldous\_of\_moment}: if
+$\E|X_n(\tau+\delta)-X_n(\tau)|^2\le C\delta$ uniformly, Markov gives (ii).
+
+\begin{remark}[hygiene]
+(1) Fallback ladder: full \texttt{aldous\_tightness} $\to$ Tiers 1--2 proved
+with the Tier-3 assembly as the sole residual $\to$ Tier 1 alone. No
+incorrect statements, no placeholder \texttt{sorry}s in delivered theorems
+--- Task 4's discipline.
+(2) Adapters over modifications: Basic/Compact/Complete/Tight/Measurable are
+frozen.
+(3) Report: the exact statement shapes delivered, where the every-cell
+convention bit, and any further Billingsley \S16 gaps (the averaging
+bookkeeping and the truncation-at-$1$ edge cases are the likely spots).
+\end{remark}
+
+\end{document}

@@ -1,0 +1,105 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief: the finite-$n$ rates and the every-$n$ current decoupling}
+\date{4 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Encode the finite-$n$ type D ASEP bond rates
+(\texttt{eq:nrates}/\texttt{eq:nparams} of the paper, \S1.1) and prove, sorry-free:
+(a) the per-background current tallies behind the \underline{every-$n$} claim of
+\texttt{prop:decouple} (currently formalized only at $n=\infty$); (b) the exact
+$q^{2n}$-rescaled decomposition whose $n\to\infty$ limit recovers the $n=\infty$
+table \texttt{eq:rates} already encoded in \texttt{TypeDDecoupling.lean}; (c) rate
+nonnegativity for $q\in(0,1)$, $n\ge1$. New self-contained file (suggest
+\texttt{TypeDDecouplingFiniteN.lean}); do not modify existing theorems beyond
+docstring cross-references; the whole project must build.
+
+\section*{Parametrization (the key design choice)}
+
+Work with two real parameters $q\in(0,1)$ and $r>0$, where $r$ plays the role of
+$q^{n}$; every rate below is a Laurent polynomial in $(q,r)$, so all identities are
+\texttt{ring}/\texttt{field\_simp}-provable, and the natural-number case is the
+specialisation $r=q^{\,n}$. This also captures the paper's analytic continuation in
+$q^n$ (\texttt{rem:range}) for free. Set
+\[
+  \beta:=\frac{r^{-2}}{q}+\frac{r^{2}}{q}\cdot q^{0}\ \text{---\;precisely}\quad
+  \beta_n=q^{1-2n}+q^{2n-1}=\frac{q}{r^2}+\frac{r^2}{q},\qquad
+  \sigma_n=(q^{n-1}-q^{1-n})^2=\Big(\frac{r}{q}-\frac{q}{r}\Big)^{\!2}.
+\]
+
+\section*{(a) The tallies (identities in $(q,r)$, each \texttt{ring}-provable)}
+
+Species-$1$ rightward rate across a bond, case by case in the species-$2$ background,
+each summing to $q^{-1}\beta_n=r^{-2}+r^2q^{-2}$:
+\begin{align*}
+  (1,0):&\quad q^{-1}\beta_n; \\
+  (3,0):&\quad q^{-2}\sigma_n+\big(q^{2n-2}-q^{2n-4}+2q^{-2}\big)
+          = r^{-2}+r^2q^{-2};\\
+  (1,2):&\quad \big(2+q^{-2n}(1-q^2)\big)+\sigma_n = r^{-2}+r^2q^{-2};\\
+  (3,2):&\quad q^{-1}\beta_n .
+\end{align*}
+Species-$1$ leftward, each summing to $q\beta_n=q^2r^{-2}+r^2$:
+\begin{align*}
+  (0,1):&\quad q\beta_n;\\
+  (0,3):&\quad q^{2}\sigma_n+\big(2q^2+q^{2-2n}-q^{4-2n}\big)=q^2r^{-2}+r^2;\\
+  (2,1):&\quad \sigma_n+\big(2-q^{2n-2}(1-q^2)\big)=q^2r^{-2}+r^2;\\
+  (2,3):&\quad q\beta_n .
+\end{align*}
+(Here $q^{\pm2n}=r^{\pm2}$, $q^{2n-2}=r^2q^{-2}$, $q^{2-2n}=q^2r^{-2}$,
+$q^{2n-4}=r^2q^{-4}$, $q^{4-2n}=q^4r^{-2}$.) Species $2$ is symmetric (swap the roles
+of the two species; the rates are species-symmetric). All eight identities were
+verified by hand and, earlier, numerically against the $16\times16$ generator of the
+REU paper. Conclude the finite-$n$ statement of \texttt{prop:decouple}: the
+species-$i$ current across a bond equals the single-species ASEP current with
+$r_R=q^{-1}\beta_n$, $r_L=q\beta_n$, independent of the other species' background.
+
+\section*{(b) Exact rescaled decomposition and the $n\to\infty$ limit}
+
+Multiplying each rate by $q^{2n}=r^2$ gives polynomials in $r^2$ whose constant
+terms are the $n=\infty$ rates of \texttt{eq:rates} (with $\eps=1-q^2$):
+\[
+\begin{array}{llll}
+  \text{hop right:} & r^2\cdot q^{-1}\beta_n = 1+r^4q^{-2}, &
+  \text{hop left:} & r^2\cdot q\beta_n = q^2+r^4,\\
+  \text{pair right:} & r^2q^{-2}\sigma_n = 1-2r^2q^{-2}+r^4q^{-4}, &
+  \text{pair left:} & r^2q^{2}\sigma_n = q^4-2q^2r^2+r^4,\\
+  \text{swap:} & r^2\sigma_n = q^2-2r^2+r^4q^{-2}, &
+  \text{right merge:} & r^2\big(2+q^{-2n}\eps\big)=\eps+2r^2,\\
+  \text{right split:} & q^2\eps+2q^2r^2, &
+  \text{left merge:} & 2r^2-r^4q^{-2}\eps,\\
+  \text{left split:} & 2r^2q^{-2}-r^4q^{-4}\eps. &&
+\end{array}
+\]
+State these as exact identities (rescaled rate $=$ limit value $+$ $r^2\cdot$
+explicit correction), so the $r\to0$ limits are trivial (\texttt{Polynomial}
+continuity or direct \texttt{Filter.Tendsto}), and prove a consistency lemma: the
+constant terms coincide with the $n=\infty$ rate values used in
+\texttt{TypeDDecoupling.lean}.
+
+\section*{(c) Nonnegativity}
+
+For $q\in(0,1)$ and $0<r\le q$ (i.e.\ $n\ge1$): all rates above are nonnegative;
+the only nontrivial case is the left merge $2-q^{2n-2}(1-q^2)=2-r^2q^{-2}(1-q^2)$,
+where $r\le q$ gives $r^2q^{-2}\le1$ and $1-q^2<2$. Optionally record the
+continuation threshold of \texttt{rem:range}: the left merge/split rates vanish
+precisely when $r^2q^{-2}(1-q^2)=2$.
+
+\begin{remark}[what this discharges]
+These results upgrade the Lean coverage of \texttt{prop:decouple} from $n=\infty$
+to every $n$ (and real $q^n$), and machine-check the paper's ``verified by computer
+algebra on the $16\times16$ generator'' claims (\S1.1, \S3). Docstrings should note
+this. The downstream every-$n$ statements (\texttt{thm:marg}) consume only
+$r_R/r_L=q^{-2}$ and the time change $\beta_n$; if a one-line corollary (the ratio
+is $n$-free) is cheap, include it.
+\end{remark}
+
+\end{document}

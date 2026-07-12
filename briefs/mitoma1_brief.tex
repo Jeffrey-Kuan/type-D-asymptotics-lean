@@ -1,0 +1,113 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\eps}{\varepsilon}\newcommand{\Sch}{\mathcal{S}}
+
+\title{Formalization brief (Mitoma campaign, 1):\\
+the Fr\'echet package for Schwartz space}
+\date{10 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Context.} With Aldous's criterion fully discharged, the
+project's single remaining \texttt{sorry} is \texttt{thm\_mitoma}
+(Mitoma's tightness criterion for $\mathcal S'(\R)$-valued c\`adl\`ag
+processes). The campaign will avoid nuclearity and Hermite bases entirely
+(both absent from Mathlib) by the Kallianpur--Xiong compact-confinement
+formulation; its functional-analytic engine is Banach--Steinhaus on
+$\Sch$, and Mathlib's \texttt{WithSeminorms.banach\_steinhaus} and
+\texttt{Seminorm.continuous\_iSup} both require
+\texttt{[BarrelledSpace $\R$ $\Sch$]} --- an instance Mathlib does not
+have, because it lacks \texttt{CompleteSpace} for \texttt{SchwartzMap}
+(we verified: no such instance exists anywhere in Mathlib). This task
+builds that missing package. It is deliberately \emph{library-grade
+Mathlib-general material} (a future upstream candidate, like the Nash and
+Kolmogorov--Rogozin files).
+
+\medskip
+\noindent\textbf{Goal.} A NEW self-contained file
+\texttt{TypeDDecouplingSchwartzFrechet.lean} (Mathlib imports only; no
+existing project file is touched; whole project must still build;
+standard axioms only; no \texttt{axiom}/\texttt{sorry}). Work over
+Mathlib's own \texttt{SchwartzMap E F} ($E,F$ real normed spaces, or
+specialize to $\Sch(\R,\R)$ where genuinely necessary --- state each
+result at the generality that is natural, and specialize only with a
+documented reason). Deliverables, in dependency order:
+
+\begin{itemize}
+\item[(1)] \textbf{Countably generated uniformity.}
+$\mathcal U(\Sch(E,F))$\texttt{.IsCountablyGenerated} (the uniformity
+filter is countably generated) --- from the countable
+seminorm family \texttt{schwartzSeminormFamily} ($\mathbb N\times\mathbb
+N$-indexed) via \texttt{schwartz\_withSeminorms} and Mathlib's
+seminorm-basis description of the uniformity. (Search Mathlib first: a
+\texttt{WithSeminorms}-to-countably-generated bridge may already exist
+for countable index types.)
+\item[(2)] \textbf{Completeness:} \texttt{CompleteSpace $\Sch(E,F)$},
+for the EXISTING instances \texttt{SchwartzMap.instUniformSpace}/%
+\texttt{instTopologicalSpace} --- do NOT introduce a new metric or
+topology and prove completeness for that; the instance must be for
+Mathlib's canonical Schwartz uniformity. Route: by (1) and
+\texttt{UniformSpace.complete\_of\_cauchySeq\_tendsto} (or its current
+name), sequential completeness suffices. For a Cauchy sequence $(f_j)$:
+each seminorm $p_{k,n}$ is Cauchy-uniform, so $x^k\,\partial^n f_j$
+converges uniformly on $E$; uniform convergence of all iterated
+derivatives gives a smooth limit (Mathlib's
+\texttt{hasFDerivAt\_of\_tendstoUniformly} family /
+\texttt{iteratedFDeriv} limit lemmas); decay bounds pass to the uniform
+limit; convergence holds in every seminorm, hence in the Schwartz
+topology. This is the analytic heart of the task.
+\item[(3)] \textbf{Baire:} \texttt{BaireSpace $\Sch(E,F)$}. Route: (1)
+$+$ (2) $+$ Mathlib's metrization of countably generated uniformities
+(\texttt{UniformSpace.pseudoMetrizableSpace} or the
+\texttt{metrizable\_uniformity} form that preserves the uniformity, so
+completeness transfers) $+$ the Baire instance for complete pseudometric
+spaces. Take care that the pseudometric induces the SAME uniformity
+(otherwise completeness does not transfer); Mathlib's uniformity-level
+metrization theorem is the correct tool.
+\item[(4)] \textbf{Barrelled:} \texttt{BarrelledSpace $\R$ $\Sch(E,F)$}
+--- should be immediate from (3) via
+\texttt{BaireSpace.instBarrelledSpace} (the needed
+\texttt{IsTopologicalAddGroup}/\texttt{ContinuousConstSMul} instances
+exist). If instance-resolution needs T2/separatedness of $\Sch$ anywhere,
+note that the seminorm family is point-separating ($p_{0,0}$ is the
+sup-norm) and derive the required separation instance.
+\item[(5)] \textbf{Sanity corollaries} (these are what campaign task M3
+will consume --- they must elaborate, as a check that the instances
+actually fire): (a) Banach--Steinhaus for tempered functionals: for any
+family $\mathcal F:\iota\to(\Sch(\R,\R)\to L[\R]\ \R)$ with
+$\forall\phi,\ \exists C,\ \forall i,\ |\mathcal F_i\phi|\le C$, the
+family is uniformly equicontinuous, i.e.\ there is a single continuous
+seminorm $q$ on $\Sch$ with $|\mathcal F_i\phi|\le q(\phi)$ for all
+$i,\phi$ (via \texttt{WithSeminorms.banach\_steinhaus}; extract the
+dominating-seminorm form). (b) A pointwise supremum
+$\phi\mapsto\sup_{m}|\mathcal F_m\phi|$ of countably many tempered
+functionals, when finite everywhere, is a continuous seminorm (via
+\texttt{Seminorm.continuous\_iSup}).
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) SEARCH FIRST at every step: the metrization, sequential-completeness,
+and seminorm-uniformity bridges likely exist under names we could not
+fully confirm; do not rebuild what Mathlib has.
+(2) Fallback ladder: full package $\to$ (1)+(2) proved with (3)/(4) as
+documented residuals $\to$ honest report. No fabrication; if a step
+genuinely resists, report the precise obstruction (e.g.\ a missing
+Mathlib metrization lemma) rather than weakening or re-topologizing.
+(3) FIDELITY TRAP (repeat of the task-2 lesson): all instances must
+attach to Mathlib's canonical \texttt{SchwartzMap} topology/uniformity.
+A completeness proof for a homemade metric is worthless to the campaign
+and will be rejected in audit.
+(4) Report as \texttt{mitoma1\_report.md}: what was proved at what
+generality, the exact instance names, which Mathlib lemmas carried
+(2) and (3), and any upstream-worthy observations.
+\end{remark}
+
+\end{document}

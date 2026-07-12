@@ -1,0 +1,220 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\eps}{\varepsilon}\newcommand{\Sch}{\mathcal{S}}
+\newcommand{\ip}[2]{\langle #1,#2\rangle}
+
+\title{Formalization brief (Mitoma campaign, 3c):\\
+uniform dual-ball confinement (Mitoma's Lemmas, transcribed)}
+\date{11 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Context.} This is the probabilistic heart of the
+campaign: from per-test-function control of an $\Sch'$-valued family,
+produce ONE compact polar ball confining all paths uniformly, with high
+probability. The architecture below is TRANSCRIBED from the two primary
+sources (both read in full): Mitoma, \emph{Ann.\ Probab.}~11 (1983)
+989--999, Lemmas 3.2--3.3, and Mitoma, \emph{J.\ Math.\ Soc.\ Japan}~35
+(1983) 629--636, Lemmas 1--2 with their complete proofs (equations
+(2.1)--(2.9) there). Every constant below is from those proofs. This is
+NOT a from-memory reconstruction; deviations from the sources should be
+flagged in the report.
+
+\medskip
+\noindent\textbf{Setting.} $\Sch:=\Sch(\R,\R)$ with M3b's chain: the
+Hilbertian seminorms $\|\phi\|_q$ (\texttt{sobolevSeminorm q}), the
+vectors $e^r_j=\texttt{hermiteSobolevVec r j}=(j+1)^{-r}h_j$, the HS
+input \texttt{hermiteSobolev\_hs\_summable} ($q+1\le r\Rightarrow
+\sum_j\|e^r_j\|_q^2<\infty$, with $\|e_j^r\|_q=(j+1)^{q-r}$), the
+seminorm-convergent expansion $\phi=\sum_j\ip{\phi}{h_j}h_j$, and the
+two-sided domination lemmas. The dual model is M2's \texttt{SchDual}
+($\Sch\to L_{pt}[\R]\ \R$) with \texttt{polarBall} and
+\texttt{isCompact\_polarBall}. Data: probability spaces
+$(\Omega_i,\PP_i)_{i\in\iota}$, processes
+$Z_i:[0,1]\times\Omega_i\to\texttt{SchDual}$ given through their
+evaluations (hypotheses phrased per test function; see (C0)). A countable
+time set $D\subseteq[0,1]$ is fixed (e.g.\ $(\mathbb Q\cap[0,1])\cup\{1\}$;
+keep $D$ abstract).
+
+\medskip
+\noindent\textbf{Goal.} A NEW file \texttt{TypeDDecouplingMitomaCore.lean}
+(imports: Mathlib $+$ the campaign files Hermite/HermiteSobolev/%
+SchwartzDual/SchwartzFrechet as needed; no existing project file touched;
+whole project builds; standard axioms; no \texttt{axiom}/\texttt{sorry}).
+
+\section*{(C0) Hypotheses format}
+
+Phrase everything over: for each $i$ and $\phi\in\Sch$, a real process
+$Y_i^\phi:D\times\Omega_i\to\R$ with $Y_i^\phi(t)=\ip{Z_i(t)}{\phi}$
+--- concretely, take as given a map
+$Z:\ \forall i,\ D\to\Omega_i\to\texttt{SchDual}$ with each evaluation
+$\omega\mapsto\ip{Z_i(t,\omega)}{\phi}$ measurable, linearity in $\phi$
+being automatic. The quantitative hypothesis (per-$\phi$ uniform
+sup-tightness; this is what the per-$\phi$ D-tightness of task M4
+supplies via our Skorokhod theory):
+\[
+(\mathrm H)\qquad\forall\phi\in\Sch,\ \forall\eps>0,\ \exists a>0:\
+\sup_i\ \PP_i\Big(\sup_{t\in D}|\ip{Z_i(t)}{\phi}|>a\Big)\le\eps .
+\]
+(Each $\sup_{t\in D}$ over countable $D$ of measurable maps is
+measurable; provide the small lemma.)
+
+\section*{(C1) The functional $M$ and its regularity (JMSJ Lemma 1)}
+
+For fixed $\eps>0$ define, for $\phi\in\Sch$,
+\[
+M_i(\phi):=\int_{\Omega_i}
+\frac{\sup_{t\in D}|\ip{Z_i(t)}{\phi}|}{1+\sup_{t\in D}|\ip{Z_i(t)}{\phi}|}
+\,d\PP_i,\qquad M(\phi):=\sup_iM_i(\phi).
+\]
+Prove (as in the source, page 630): 1) $M\ge0$, $M(-\phi)=M(\phi)$;
+2) subadditivity $M(\phi+\psi)\le M(\phi)+M(\psi)$ (from
+$\frac{|a+b|}{1+|a+b|}\le\frac{|a|}{1+|a|}+\frac{|b|}{1+|b|}$ pointwise,
+sup inside); 3) $M$ is lower semicontinuous on $\Sch$ (Fatou over the
+countable sup, exactly the displayed liminf chain in the source; note
+each $\phi\mapsto\ip{Z_i(t,\omega)}{\phi}$ is continuous); 4)
+$\lim_{n\to\infty}M(\phi/n)=0$ --- NOTE: in the source, 4) uses sample
+continuity; HERE derive it from (H): given $\eta>0$ pick $a$ with
+$\sup_i\PP_i(\sup_D|\ip{Z}{\phi}|>a)\le\eta/2$, then for $n\ge2a/\eta$
+the integrand is $\le\eta/2+ \mathbf 1_{\text{bad}}$, so $M(\phi/n)\le\eta$.
+
+\textbf{Xia's lemma} (cited as Xia, Lemma 1.2.3 in the sources; PROVE it
+--- it is a Baire argument on the Fr\'echet space $\Sch$, available since
+M1): a function $M:\Sch\to[0,\infty)$ with 1)--4) is continuous at $0$.
+Route: for $\eps'>0$ let $C_k:=\bigcap_{m\ge k}\{\phi:M(\phi/m)\le\eps'\}$
+--- closed by 3); $\Sch=\bigcup_kC_k$ by 4); by \texttt{BaireSpace}
+(task M1) some $C_k$ has an interior point $\phi_0$, i.e.\ a neighborhood
+$\phi_0+U$; for $\psi\in U$ and $m\ge k$, subadditivity gives
+$M(\psi/m)\le M((\phi_0+\psi)/m)+M(\phi_0/m)\le\eps'+M(\phi_0/m)$, and
+$M(\phi_0/m)\to0$; conclude $M\le2\eps'$ on $\frac1mU$ for large $m$, a
+neighborhood of $0$.
+
+\textbf{Conclusion (C1), the source's (2.1):} for every $\eps>0$ there
+exist $q\in\mathbb N$ and $\delta>0$ with
+\[
+\sup_i\int_{\Omega_i}\sup_{t\in D}\big|1-e^{\,i\ip{Z_i(t)}{\phi}}\big|
+\,d\PP_i\ \le\ \eps+2\frac{\|\phi\|_q^2}{\delta^2}
+\qquad\text{for ALL }\phi\in\Sch .
+\]
+Transcribe the source's proof verbatim: $|1-e^{is}|\le\eps/2$ for
+$|s|\le\delta_1$; $\delta_2:=\min\{\delta_1,\frac{-1+\sqrt{1+\eps}}2\}$;
+continuity of $M$ at $0$ (Xia) gives $q,\delta$ with
+$M(\phi)\le\delta_2^2$ when $\|\phi\|_q<\delta$; Markov-type bound
+$\PP_i(\sup_D|\ip{Z}{\phi}|\ge\delta_2)\le\frac{1+\delta_2}{\delta_2}
+M_i(\phi)\le\delta_2(1+\delta_2)\le\eps/4$; split $\Omega$ into
+$\tilde\Omega=\{\sup_D|\ip{Z}{\phi}|<\delta_2\}$ and its complement
+($\le\eps/2+2\cdot\eps/4=\eps$); for $\|\phi\|_q\ge\delta$ use
+$|1-e^{is}|\le2\le2\|\phi\|_q^2/\delta^2$. Continuity of
+$\|\cdot\|_q=$ \texttt{sobolevSeminorm q} w.r.t.\ the Schwartz topology
+is M3b's \texttt{sobolev\_continuous}; note the $q$ produced by Xia comes
+from a Schwartz-neighborhood basis --- use M3b's two-sided domination to
+convert the neighborhood $\{$Schwartz seminorms$\}$ into a
+$\|\cdot\|_q$-ball (this is where the chain GENERATING the topology is
+used).
+
+\section*{(C2) Gaussian averaging (JMSJ Lemma 2, (2.4)--(2.9))}
+
+Fix $\eps>0$; let $q,\delta$ be from (C1) and take $r:=q+1$, so
+$S_{qr}:=\sum_j\|e^r_j\|_q^2<\infty$ (\texttt{hermiteSobolev\_hs\_summable};
+$\|e_j^r\|_q=(j+1)^{-1}$, $S_{qr}=\pi^2/6$ if convenient --- any finite
+bound suffices). Define the confinement functional
+$Q_i(t,\omega):=\sum_j\ip{Z_i(t,\omega)}{e^r_j}^2
+=\sum_j(j+1)^{-2r}\ip{Z_i(t,\omega)}{h_j}^2\in[0,\infty]$.
+Prove, for every $C>0$:
+\[
+\sup_i\ \PP_i\Big(\sup_{t\in D}Q_i(t)>C^2\Big)\ \le\
+\frac{\sqrt e}{\sqrt e-1}\Big(\eps+\frac{2}{\delta^2}\cdot
+\frac{S_{qr}}{C^2}\Big).
+\]
+Transcription of the source's (2.5)--(2.6), finite $n$ first:
+\begin{itemize}
+\item[(a)] Monotone limit: $\PP(\sup_DQ>C^2)=\lim_n\PP(\sup_D
+\sum_{j\le n}\ip{Z}{e^r_j}^2>C^2)$ (countable $D$, monotone in $n$).
+\item[(b)] Badrikian/Markov step: for $Y\ge0$,
+$\PP(Y>C^2)\le\frac{\sqrt e}{\sqrt e-1}\,\E[1-e^{-Y/2C^2}]$ (on
+$\{Y>C^2\}$, $1-e^{-Y/2C^2}\ge1-e^{-1/2}=\frac{\sqrt e-1}{\sqrt e}$).
+Apply with $Y=\sup_D\sum_{j\le n}\ip{Z}{e^r_j}^2$; then move $\sup_D$
+inside $1-e^{-\cdot}$ (monotonicity).
+\item[(c)] Gaussian identity: with $\gamma_n$ the centered product
+Gaussian on $\R^n$ of per-coordinate variance $1/C^2$,
+\[
+1-\exp\Big(-\sum_{j\le n}u_j^2/2C^2\Big)
+=\int_{\R^n}\Big(1-\cos\big(\textstyle\sum_jy_ju_j\big)\Big)d\gamma_n(y)
+\le\int_{\R^n}\big|1-e^{\,i\sum_jy_ju_j}\big|\,d\gamma_n(y)
+\]
+(product of \texttt{charFun\_gaussianReal}; real part). Substitute
+$u_j=\ip{Z_i(t)}{e^r_j}$ and note
+$\sum_jy_j\ip{Z}{e^r_j}=\ip{Z}{\phi_y}$ with
+$\phi_y:=\sum_{j\le n}y_je^r_j\in\Sch$ (linearity of the pairing;
+finite sum).
+\item[(d)] Fubini and (C1): $\sup_D$ then $\int d\PP$ then
+$\int d\gamma_n$, reorder to apply (C1) at each fixed $y$:
+\[
+\int_{\R^n}\Big(\eps+\frac2{\delta^2}\|\phi_y\|_q^2\Big)d\gamma_n(y)
+=\eps+\frac2{\delta^2}\cdot\frac1{C^2}\sum_{j\le n}\|e^r_j\|_q^2
+\]
+using $\int y_jy_k\,d\gamma_n=\delta_{jk}/C^2$ and the Hilbertian
+$q$-inner product (M3b) for
+$\|\phi_y\|_q^2=\sum_{jk}y_jy_k\ip{e^r_j}{e^r_k}_q$. (Justify the
+$\gamma_n$-integrability of $y\mapsto\|\phi_y\|_q^2$: finite sum of
+Gaussian second moments.)
+\item[(e)] Let $n\to\infty$: the bound is uniform in $n$; conclude with
+$S_{qr}$.
+\end{itemize}
+
+\section*{(C3) The confinement theorem}
+
+Package (C1)+(C2) as the deliverable for M3d (name it
+\texttt{mitoma\_confinement}): under (C0)/(H), for every $\eta>0$ there
+exist $q\in\mathbb N$ and $B>0$ such that, with
+$K:=\{F\in\texttt{SchDual}\mid\forall\phi,\ |F\phi|\le
+B\,\|\phi\|_{q+1}\}$ (which is \texttt{polarBall} of
+$B\cdot$\texttt{sobolevSeminorm}$(q{+}1)$, COMPACT by M2's
+\texttt{isCompact\_polarBall} $+$ M3b's continuity):
+\[
+\sup_i\ \PP_i\Big(\exists t\in D:\ Z_i(t)\notin K\Big)\ \le\ \eta .
+\]
+Derivation: choose $\eps$ with $2\frac{\sqrt e}{\sqrt e-1}\eps\le\eta/2$
+in (C1); in (C2) choose $C$ with
+$\frac{\sqrt e}{\sqrt e-1}\frac{2S_{qr}}{\delta^2C^2}\le\eta/2$. On the
+good event $\{\sup_DQ_i\le C^2\}$: for every $\phi$, the expansion
+$\phi=\sum_j\ip{\phi}{h_j}h_j$ converges in $\Sch$ (M3b), each
+$Z_i(t)\in\texttt{SchDual}$ is continuous, so
+$\ip{Z_i(t)}{\phi}=\sum_j\ip{\phi}{h_j}\ip{Z_i(t)}{h_j}$; weighted
+Cauchy--Schwarz with weights $(j+1)^{\pm r}$ gives
+$|\ip{Z_i(t)}{\phi}|\le Q_i(t)^{1/2}\,\|\phi\|_r\le C\|\phi\|_r$. So
+$B=C$, $r=q+1$, and the event $\{\forall t\in D:Z_i(t)\in K\}$ contains
+the good event. Measurability: membership in $K$ is countably checkable
+(M2's \texttt{mem\_polarBall\_iff\_denseSet} or directly through the
+$h_j$-evaluations --- the good event IS a countable-sup event; no
+$\sigma$-algebra on \texttt{SchDual} is needed).
+
+\begin{remark}[hygiene]
+(1) The sources' constants ($\frac{\sqrt e}{\sqrt e-1}$, the
+$\delta_2$ bookkeeping) are transcribed; SANCTIONED to change any
+constant the honest Lean accounting requires --- only the FORM of (C3)
+matters downstream (some compact rational polar ball, failure $\le\eta$,
+uniform in $i$).
+(2) Fallback ladder: full (C3) $\to$ (C1)+(C2) with (C3) assembly
+documented $\to$ (C1) alone (Xia + the char-functional bound is already
+a major deliverable) $\to$ honest report. No fabrication; the
+architecture is from the primary sources, so treat resistance as a
+transcription bug to report, not a statement to weaken silently.
+(3) SEARCH FIRST: \texttt{charFun\_gaussianReal}, product Gaussian
+integrals (\texttt{GaussianFourier} shelf), Fatou/liminf for sups,
+Baire-category API (\texttt{nonempty\_interior\_of\_iUnion\_of\_closed}
+or current name).
+(4) Report as \texttt{mitoma3c\_report.md}: final statement shapes of
+(C1)/(C2)/(C3) (M3d imports these), constants, deviations from the
+sources.
+\end{remark}
+
+\end{document}

@@ -1,0 +1,120 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+
+\title{Formalization brief: de-opaquing the two-particle ASEP Green's function\\
+(Sch\"utz's reflection formula in the $F$-basis, and the $C/(1+t)$ decay)}
+\date{6 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Discharge \texttt{asepGreen\_integral\_decay} in
+\texttt{TypeDDecouplingLCLT.lean} (attached). As encoded, the integrand is
+\texttt{opaque} --- the \texttt{sorry} is unprovable by design. The task is
+therefore a sanctioned RESTRUCTURING of the \texttt{lem\_asep} block (the
+opaque \texttt{asepGreenIntegrand}, the \texttt{hGreen} hypothesis,
+\texttt{asepGreen\_integral\_decay}, and \texttt{lem\_asep}), preserving or
+strengthening \texttt{lem\_asep}'s conclusion
+($\mathrm{asepKernel}\ q\ t\ \xi\ \xi'\le C/(1+t)$) and keeping every consumer
+(\texttt{thm\_kernel} etc.) elaborating. All repairs documented in docstrings
+(fidelity-repair convention). New library-clean file
+\texttt{TypeDDecouplingBethe.lean} encouraged. Whole project must build;
+standard axioms only.
+
+\section*{Design: work in the $F$-basis, not the contour integral}
+
+Do NOT define a contour integrand. Sch\"utz's two-particle solution for the
+partially asymmetric exclusion process has an equivalent representation as a
+geometric combination of single-particle kernels (``dynamical reflection''),
+which is the formalization-friendly form: no complex analysis, no $S$-matrix
+poles, no orthogonality-of-characters subtleties.
+
+\begin{itemize}
+\item[(1)] \underline{Single-particle kernel.} Let $F_m(t)$ be the free
+asymmetric walk kernel (right rate $r_R$, left rate $r_L$ --- match the
+project's same-species dual rates; carry them symbolically). Define it
+concretely EITHER by the lattice Fourier integral
+$F_m(t)=\frac1{2\pi}\int_{-\pi}^{\pi}
+e^{t(r_Re^{\mathrm i\theta}+r_Le^{-\mathrm i\theta}-r_R-r_L)}
+e^{-\mathrm im\theta}\,d\theta$ (real part; reuse the inversion machinery of
+\texttt{TypeDDecouplingKR.lean}, attached) OR as
+$\exp(tA_1)\delta_0$ via \texttt{TypeDDecouplingSemigroup.lean} (attached),
+proving the two agree by the uniqueness argument. Prove the basic $F$-calculus:
+the forward ODE $\dot F_m=r_RF_{m-1}+r_LF_{m+1}-(r_R+r_L)F_m$, the initial
+condition $F_m(0)=\delta_{m,0}$, nonnegativity, $\sum_mF_m=1$, and the decay
+$F_m(t)\le C_1/\sqrt{1+t}$ with $C_1=C_1(r_R+r_L)$ (modulus bound
+$+\ 1-\cos\theta\ge\tfrac2{\pi^2}\theta^2$, as in the \texttt{lem\_Rlclt}
+campaign's Tier 2).
+\item[(2)] \underline{The two-particle ansatz.} For the ordered pair
+$x_1<x_2$ started from $y_1<y_2$, make the reflection ansatz
+\[
+  G_t(x_1,x_2)\ =\ F_{x_1-y_1}(t)F_{x_2-y_2}(t)
+  \ +\ \sum_{k\ge0}c_k\,F_{x_1-y_2-a_k}(t)\,F_{x_2-y_1+b_k}(t),
+\]
+with coefficients $c_k$ (geometric in $r_L/r_R$ or $r_R/r_L$) and integer
+shifts $a_k,b_k$ TO BE DERIVED: impose the exclusion boundary condition ---
+the two-particle master equation for the exclusion pair differs from the free
+one only at contact $x_2=x_1+1$, and the standard reduction replaces it by the
+free equation plus the boundary identity
+\[
+  r_R\,G_t(x,x)+r_L\,G_t(x+1,x+1)\ =\ (r_R+r_L)\,G_t(x,x+1)
+  \qquad(\forall x,t),
+\]
+(check the exact form against the project's two-particle rates; derive rather
+than trust this template). Substituting the ansatz turns the boundary identity
+into a two-term recursion for $(c_k,a_k,b_k)$, solvable in closed form with
+$|c_k|\le\rho^k$ for a ratio $\rho=\rho(q)<1$ (this is where $q\in(0,1)$
+enters). Verify the derived formula satisfies: (i) the free equation off
+contact (from the $F$-ODE, term by term; justify the interchange with the sum
+by uniform geometric domination); (ii) the boundary identity (the recursion,
+by construction); (iii) the initial condition $G_0=\delta$ on the ordered
+sector (from $F_m(0)=\delta_{m,0}$: check the reflection terms vanish at
+$t=0$ for $x_1<x_2$ --- the shifts $a_k,b_k$ make the indices nonzero there;
+if a low-$k$ term needs a separate case, handle it).
+\item[(3)] \underline{Identification.} Define (or, if \texttt{asepKernel} is
+opaque, REPLACE it by --- fidelity repair, documented) the two-particle
+exclusion kernel via \texttt{TypeDDecouplingSemigroup.lean}: the concrete
+finite-range bounded generator on the ordered sector
+$\{(x_1,x_2):x_1<x_2\}$. Prove $G=\,$kernel by the weighted-Gronwall
+uniqueness (both solve the same forward ODE with the same initial condition;
+the boundary reduction of (2) is exactly what makes $G$ a solution of the
+EXCLUSION equation).
+\item[(4)] \underline{Decay.} From (1)'s $F$-bound and $\sum_k|c_k|\le
+(1-\rho)^{-1}$:
+$G_t(x_1,x_2)\le C_1^2\big(1+(1-\rho)^{-1}\big)/(1+t)$ --- the target
+$C(q)/(1+t)$, with $C$ quantified before $t,\xi,\xi'$ as in the current
+statement.
+\item[(5)] \underline{Interface.} Restate the block: \texttt{lem\_asep}
+becomes UNCONDITIONAL (no \texttt{hGreen} hypothesis --- the formula is now a
+theorem); \texttt{asepGreen\_integral\_decay} either becomes the proved decay
+of the concrete representation or is retired in favour of it (keep a
+deprecation docstring pointing to the new theorem so the paper's \S1.5
+mapping stays traceable); the opaque \texttt{asepGreenIntegrand} may be
+deleted or kept with a docstring noting it was superseded. Thread consumers.
+\end{itemize}
+
+\begin{remark}[fallbacks and hygiene]
+(1) Sanctioned fallbacks, in order: if the $t=0$ vanishing of reflection terms
+resists in full generality, a case split or an explicit finite verification of
+the lowest terms is fine; if the identification (3) resists at the
+ordered-sector boundary, the single named hypothesis may carry ONLY the
+sector-boundary regularity fact (documented) --- (1),(2),(4) must be proved.
+(2) The exact rates: read them off the project's encoding of the same-species
+dual pair (do not assume $r_R+r_L=1$); if the encoding leaves them abstract,
+carry $(r_R,r_L)$ with $0<r_L<r_R$ (or as encoded) and expose $q$ through
+their ratio as the project does.
+(3) Sanity identities worth proving as tests: total mass $\le1$;
+$G\ge0$; symmetry under the appropriate reflection.
+(4) Report: the derived $(c_k,a_k,b_k)$ in the summary; whether
+\texttt{lem\_asep} is now unconditional; final term-level count
+(target 10 $\to$ 9).
+\end{remark}
+
+\end{document}

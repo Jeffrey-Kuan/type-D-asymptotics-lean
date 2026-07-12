@@ -1,0 +1,139 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\eps}{\varepsilon}
+
+\title{Formalization brief: \texttt{lem\_Rlclt}\\
+(defected local CLT via operator-level renewal, uniform in $q$)}
+\date{6 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry} at \texttt{lem\_Rlclt} in
+\texttt{TypeDDecouplingLCLT.lean} (attached; modify only this declaration plus
+sanctioned fidelity repairs below). Reuse the attached sorry-free
+infrastructure: \texttt{TypeDDecouplingSemigroup.lean} (bounded generator,
+exp-semigroup), \texttt{TypeDDecouplingKR.lean} (lattice Fourier inversion),
+\texttt{TypeDDecouplingNash.lean}. New library-clean file
+\texttt{TypeDDecouplingRenewal.lean} encouraged. Whole project must build;
+standard axioms only.
+
+\section*{Fidelity repairs (mandatory, before proving)}
+
+\begin{itemize}
+\item[(F1)] \underline{$q$-uniformity.} As encoded, $q$ is fixed before
+$\exists C$, and the window $2q^2(1-q^2)t\le K$ then BOUNDS $t\le T_{\max}(q,K)$,
+so any kernel with $p\le1$ satisfies the bound trivially with
+$C=\sqrt{1+T_{\max}}$. The paper consumes this lemma in the regime $q\to1$
+(window unbounded), so the faithful statement has the constant uniform in $q$:
+restate with $\exists C=C(K)>0$ quantified BEFORE $q$ (or before a subrange
+$q\in[q_0,1)$ with the complementary range handled by the trivial window bound,
+assembling a $q$-uniform $C$). Document in the docstring (fidelity-fix
+convention; this parallels the \texttt{lem\_Slclt} quantifier repair).
+\item[(F2)] \underline{Under-constrained defect rates.} \texttt{hbulk} pins the
+rates only for $|x|\ge2$; \texttt{hsplit}/\texttt{hmerge} pin
+$\mathrm{rate}(0,\pm1)$ and $\mathrm{rate}(\pm1,0)$ but leave
+$\mathrm{rate}(0,y)$ ($|y|\ge2$), $\mathrm{rate}(\pm1,y)$ ($y\ne0$) and any
+other defect exits unspecified. Add the faithful missing hypotheses from the
+paper's $R$-walk (\S5): no other exits from $0$
+($\mathrm{rate}(0,y)=0$ for $|y|\ge2$); from $\pm1$: nearest-neighbour rates
+$1+q^2$ outward, the merge rate as given, the swap
+$\mathrm{rate}(\pm1,\mp1)$ as in the paper's table if present in the model
+files, zero otherwise --- consult \texttt{TypeDDecouplingCrossover.lean}'s
+$R$-walk encoding for the authoritative rates and match them. Every added
+hypothesis must be one the model's actual rate matrix satisfies; document each.
+\item[(F3)] \underline{A-priori kernel bound.} If \texttt{IsTransitionKernel}
+does not force $0\le p\le1$/summability needed for the semigroup
+identification, add the faithful hypothesis (e.g.\ $p_t(x)\le1$, or
+$\sum_x p_t(x)\le1$) rather than fabricate; document (this is the known
+interface gap from the \texttt{lem\_free} campaign).
+\end{itemize}
+
+\section*{Tier 1: identification with the exponential semigroup}
+
+With (F2)--(F3) the rate matrix is concrete, finite-range, with exit rates
+uniformly bounded by $4$; reuse \texttt{TypeDDecouplingSemigroup.lean} to
+construct $Q_t=\exp(tA)$ on $\ell^1$ and identify $p=Q_\cdot\delta_0$ by the
+weighted-Gronwall uniqueness (now available thanks to (F3)). Derive
+Chapman--Kolmogorov and mass facts as needed.
+
+\section*{Tier 2: the free-kernel bound, uniform in $q$}
+
+For the UNPERTURBED symmetric walk $A_0$ (rates $1+q^2$ both ways at every
+site), prove $f_t(r):=(\exp(tA_0)\delta_0)(r)\le C_0/\sqrt{1+t}$ with $C_0$
+ABSOLUTE (use $1+q^2\ge1$): translation invariance gives, via the lattice
+Fourier inversion of \texttt{TypeDDecouplingKR.lean},
+\[
+  f_t(r)=\frac1{2\pi}\int_{-\pi}^{\pi}e^{-\mathrm ir\theta}
+  \,e^{t(1+q^2)(\cos\theta-1)}\,d\theta,\qquad
+  f_t(r)\le\frac1{2\pi}\int_{-\pi}^{\pi}e^{-t\frac2{\pi^2}\theta^2}\,d\theta
+  \le\frac{C_0}{\sqrt{1+t}} ,
+\]
+using $1-\cos\theta\ge\tfrac2{\pi^2}\theta^2$ and $f\le1$ for small $t$.
+(Prove the Fourier representation from the exponential series of $A_0$ ---
+diagonal in the characters --- or verify the integral solves the forward ODE
+and invoke Tier-1 uniqueness, whichever is cleaner.)
+
+\section*{Tier 3: operator-level renewal (iterated Duhamel)}
+
+Decompose $A=A_{\mathrm{fr}}+V$ where $A_{\mathrm{fr}}$ is the generator with
+the defect DISCONNECTED in the incoming direction: from $0$, holding
+$\mathrm{Exp}(\nu)$, $\nu=2q^2\eps$, $\eps=1-q^2$, with splits to $\pm1$; from
+$\pm1$ and beyond, the walk with the merge and swap REMOVED (pure outward
+$1+q^2$ walk); $V$ collects the removed merge/swap entries, so every nonzero
+entry of $V$ is $O(\eps)$ and $V$ is supported on the two sites $\pm1$.
+Variation of constants:
+\[
+  p_t=e^{tA_{\mathrm{fr}}}\delta_0
+  +\int_0^t e^{(t-s)A}\,V\,e^{sA_{\mathrm{fr}}}\delta_0\,ds
+  \quad\text{iterated into}\quad
+  p_t=\sum_{k\ge0}\big(\text{$k$ merge-insertions}\big),
+\]
+or the single-step form plus a supremum bootstrap --- choose the cleanest.
+Key estimates:
+\begin{itemize}
+\item[(a)] the zeroth term: $e^{tA_{\mathrm{fr}}}\delta_0$ carries the atom
+$e^{-\nu t}\delta_{r,0}$ plus split-times integral
+$\int_0^t\nu e^{-\nu s}(\text{free-from-}\pm1\text{ kernel})_{t-s}\,ds
+\le e^{-\nu t}\delta_{r,0}+C_0'/\sqrt{1+t}$ (split the integral at $s=t/2$;
+on $[0,t/2]$ use the Tier-2 decay of the free part over time $\ge t/2$; on
+$[t/2,t]$ use $\int_{t/2}^t\nu e^{-\nu s}ds\le\nu te^{-\nu t/2}\le
+C(K)e^{-\nu t/2}$ and\dots note this tail lands near the defect --- route it
+through the bootstrap or a crude $\le\nu\cdot(t/2)\cdot\sup$-bound; the window
+$\nu t\le2K$ keeps all such factors $C(K)$);
+\item[(b)] each $V$-insertion costs $\|V\|_{\ell^1\to\ell^1}\le C\eps$ and a
+time integral $\int_0^t ds\le t$, so the $k$-th term carries
+$(C\eps t)^k/k!$-type control with $\eps t\le\nu t/(2q^2)\le K/q_0^2$ bounded
+in the window --- the series converges with a $C(K)$ factor; interleave with
+the $\sqrt{\,}$-decay by always bounding the LONGEST time-leg by Tier 2 and
+the remaining legs in $\ell^1$ (the standard convolution-splitting: for
+$s_0+\dots+s_k=t$, some leg exceeds $t/(k{+}1)$);
+\item[(c)] assemble: $p_t(r)\le C(K)/\sqrt{1+t}+\delta_{r,0}e^{-\nu t}$
+uniformly over $q\in[q_0,1)$; for $q\le q_0$ use the trivial window bound
+(F1) --- combine into the single $q$-uniform constant.
+\end{itemize}
+
+\begin{remark}[fallbacks and hygiene]
+(1) Sanctioned fallback: if the full interleaved series estimate (b) resists,
+a SINGLE named hypothesis bundle \texttt{hrenew} may carry the specific
+convolution-splitting estimate (documented field-by-field, hproc style) ---
+but Tiers 1--2, the decomposition, and estimate (a) must be proved.
+(2) If (F1)'s $q$-uniform restatement breaks the downstream consumer
+(\texttt{thm\_kernel} or others), thread the strengthened form through ---
+strengthening can only help consumers; adjust their hypothesis lists
+minimally.
+(3) Do not modify \texttt{lem\_free}/\texttt{karamata}/\texttt{asepGreen} or
+any other file except as sanctioned.
+(4) Constants free, explicit preferred; report which fidelity repairs were
+applied, which route (series vs bootstrap), and the final term-level count
+(target 11 $\to$ 10).
+\end{remark}
+
+\end{document}

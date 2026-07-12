@@ -1,0 +1,110 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\Z}{\mathbb{Z}}\newcommand{\E}{\mathbb{E}}
+\newcommand{\bone}{\mathbf 1}
+
+\title{Formalization brief: \texttt{lem:crossbridge} on a finite lattice}
+\date{4 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Machine-check the algebraic core of \texttt{lem:crossbridge}
+(the dual pair computes the species cross-correlation) on a \underline{finite} lattice,
+in a new self-contained file (suggest \texttt{TypeDDecouplingCrossbridge.lean}). The
+continuum statement in \texttt{TypeDDecouplingCrossover.lean} stays as is (its
+\texttt{sorry} covers the scaling embedding); add only a docstring cross-reference
+recording that its finite-lattice core is now proved.
+
+\section*{Setting}
+
+Finite lattice $\Lambda=\{-L,\dots,L\}$, two-species type D ASEP at $n=\infty$
+(the rate table of \texttt{eq:rates}, already encoded in the project), generator
+$\mathcal L=\sum_b\mathcal L_b$ over bonds, all as finite matrices on the
+configuration space. The \underline{triangular} duality function, for a dual configuration
+$\xi$ with finitely many particles and a process configuration $\eta$:
+\[
+  D^{\mathrm{tri}}(\xi,\eta)=\bone\{\xi\subseteq\eta\}
+  \prod_{i=1,2}\prod_{x:\,\xi_{i,x}=1}
+  q^{2\left(x-N^-_{x-1}(\xi_i)+N^+_{x+1}(\eta_i)\right)} .
+\]
+For the crossbridge only the \underline{two-particle sector} is needed: $\xi$ has exactly
+one particle of each species (positions $(x_1,x_2)$), and the dual dynamics on that
+sector is the two-particle process already encoded (the coupled pair with the
+$n=\infty$ rates; cf.\ \texttt{TypeDDecouplingDualPairWitness.lean}).
+
+\section*{Step 1: interlacing $\Rightarrow$ semigroup duality (finite linear algebra)}
+
+If $\mathcal L\,D=D\,\mathcal L_{\mathrm{dual}}^{\mathsf T}$ as finite matrices
+($D$ the two-particle-sector duality matrix $D[\xi,\eta]:=D^{\mathrm{tri}}(\xi,\eta)$),
+then for all $s\ge0$, $e^{s\mathcal L}D=D\,e^{s\mathcal L_{\mathrm{dual}}^{\mathsf T}}$:
+from $AD=DB$ one gets $A^kD=DB^k$ by induction and the exponential series converges
+entrywise (finite dimension); Mathlib's \texttt{Matrix.exp} suffices. This gives the
+duality relation
+\begin{equation}\label{eq:dualrel}
+  \E_\eta\big[D^{\mathrm{tri}}(\xi,\eta_s)\big]
+  =\E_\xi\big[D^{\mathrm{tri}}(\xi_s,\eta)\big].
+\end{equation}
+
+\underline{Primary goal} for the input: prove the two-particle-sector interlacing
+$\mathcal L D=D\mathcal L_{\mathrm{dual}}^{\mathsf T}$ itself, bond by bond: for each
+bond $b$, the identity $\mathcal L_b D=D(\mathcal L^{\mathrm{dual}}_b)^{\mathsf T}$
+is finite algebra --- the exponent bookkeeping under a bond-local move is explicit
+($N^+_{x+1}(\eta_i)$ changes only when the move crosses $x$, and the rate table's
+$1/q^2/\eps$ structure matches the $q^{2}$-shifts; this is the type D instance of
+the standard telescoping check, and in the two-particle sector the matrices are
+small). \underline{Sanctioned fallback}: if the general-$L$ bondwise identity resists,
+take the two-particle-sector interlacing as a \emph{single named hypothesis} (this
+matches the paper's own epistemic status: \texttt{thm:dual}(ii)/\texttt{cor:tri}
+rest on computer-algebra verification plus the REU induction) and prove everything
+below sorry-free from it.
+
+\section*{Step 2: block evaluation (exact, finite algebra)}
+
+Let $\eta^0$ be the block: bound pairs (state $3$) on $\{-L,\dots,0\}$, empty on
+$\{1,\dots,L\}$. For a two-particle dual $\xi$ at positions $(x_1,x_2)$:
+$N^-_{x-1}(\xi_i)=0$ (one particle per species), and on the block
+$N^+_{x+1}(\eta^0_i)=\#\{y>x:\ y\le0,\ y\ge-L\}=(-x)\vee0$ for $x\ge-L$. Hence for
+$x_1,x_2\in\{-L,\dots,0\}$ each exponent is $x_i+(-x_i)=0$ and
+\[
+  D^{\mathrm{tri}}(\xi,\eta^0)=\bone\{x_1\le0\}\,\bone\{x_2\le0\}
+  \qquad(\text{i.e.\ }k=0\text{ in the paper's }q^{2k}\text{ with this block
+  convention; prove the identity in this normalised form}).
+\]
+(If the encoding places the block boundary at a general site $b_0$, the constant is
+$q^{2k}$ with $k=2b_0$; state whichever matches the chosen convention, with the
+constant explicit.)
+
+\section*{Step 3: the crossbridge identity}
+
+Combining Steps 1--2 with the evaluation of $D^{\mathrm{tri}}$ at the initial dual
+$\xi^{\mathrm{bp},a}$ (one particle of each species at site $a$):
+$D^{\mathrm{tri}}(\xi^{\mathrm{bp},a},\eta)
+=\eta_{1,a}\eta_{2,a}\,q^{2\left(a+N^+_{a+1}(\eta_1)\right)}
+q^{2\left(a+N^+_{a+1}(\eta_2)\right)}\cdot q^{-2a-2a}\cdots$ --- state cleanly as:
+\begin{equation}\label{eq:cb}
+  \E_{\eta^0}\Big[\eta_{1,a}(s)\,\eta_{2,a}(s)\,
+  q^{2\left(a+N^+_{a+1}(\eta_1(s))\right)+2\left(a+N^+_{a+1}(\eta_2(s))\right)}\Big]
+  \;=\;q^{2k}\,\mathbb P_{(a,a)}\big(X_1(s)\le0,\ X_2(s)\le0\big),
+\end{equation}
+the left side defined directly from the process semigroup (no opaque objects
+needed at finite $L$), the right side from the two-particle dual semigroup, and
+$k$ the explicit block constant of Step 2. This is
+\texttt{eq:crossbridge} of the paper at finite $L$ --- the identity the paper
+verified to machine precision for $L\le6$; here it becomes a theorem for all $L$.
+
+\begin{remark}[interface]
+Do not modify the statement of \texttt{lem\_crossbridge} in the Crossover file; its
+\texttt{sorry} continues to stand for the continuum embedding. Add a docstring
+noting the finite-lattice core is proved in the new file. If the two-particle dual
+in \texttt{DualPairWitness} uses a different but equivalent encoding of the pair
+process, prove the bridge lemma or keep the new file's dual self-contained ---
+whichever is cleaner.
+\end{remark}
+
+\end{document}

@@ -1,0 +1,107 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\ee}{\mathcal E}\newcommand{\norm}[1]{\lVert #1\rVert}
+
+\title{Formalization brief: \texttt{lem\_free}\\
+(on-diagonal heat-kernel bound via Nash's method)}
+\date{6 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry} at \texttt{lem\_free} in
+\texttt{TypeDDecouplingLCLT.lean} (attached): for
+$W$ a \texttt{DriftlessReversibleWalk} (kernel $p$, rates, reversing measure
+$c_1\le m\le c_2$, exit rate $\le\Lambda$, range $\le\varrho$, nearest-neighbour
+conductance $m(x)\,\mathrm{rate}(x,x{+}1)\ge\delta>0$),
+\[
+  \exists\,C>0:\quad \forall t\ge0,\ \forall r,\qquad
+  p_t(r)\ \le\ \frac C{\sqrt{1+t}} .
+\]
+This is the paper's own Nash/CKS argument (Lemma 4.1). You may modify
+\texttt{TypeDDecouplingLCLT.lean} only by replacing this \texttt{sorry} with a
+proof and adding supporting lemmas (a separate file
+\texttt{TypeDDecouplingNash.lean} for the abstract analysis is encouraged ---
+keep it library-clean). Do not alter the statement or the structure
+\texttt{DriftlessReversibleWalk}; do not touch other leaves. Whole project must
+build; standard axioms only.
+
+\section*{Tier 1: the discrete Nash inequality on $\Z$ (elementary, no Fourier)}
+
+For finitely supported $f:\Z\to\R$, with
+$\norm{\nabla f}_2^2:=\sum_x(f(x{+}1)-f(x))^2$:
+\begin{itemize}
+\item[(a)] \underline{1D Agmon bound:}
+$\norm f_\infty^2\le 2\,\norm f_2\,\norm{\nabla f}_2$.
+\emph{Proof:} $f(x)^2=\sum_{y\le x}\big(f(y)^2-f(y{-}1)^2\big)
+=\sum_{y\le x}(f(y)+f(y{-}1))(f(y)-f(y{-}1))
+\le2\norm f_2\norm{\nabla f}_2$ by Cauchy--Schwarz.
+\item[(b)] \underline{Nash:} $\norm f_2^2\le\norm f_\infty\norm f_1$, so by (a),
+$\norm f_2^4\le\norm f_1^2\cdot2\norm f_2\norm{\nabla f}_2$, i.e.
+\[
+  \norm f_2^{6}\ \le\ 4\,\norm f_1^{4}\,\norm{\nabla f}_2^{2}.
+\]
+\end{itemize}
+Extend from finite support to $\ell^1\cap\ell^2$ by truncation/monotone limits
+as needed (the application is to kernels, which are summable).
+
+\section*{Tier 2: energy identity and Nash iteration}
+
+With the Dirichlet form
+$\ee(f):=\tfrac12\sum_{x,y}m(x)\,\mathrm{rate}(x,y)\,(f(y)-f(x))^2$:
+\begin{itemize}
+\item[(c)] \underline{Conductance lower bound:}
+$\ee(f)\ge\tfrac12\sum_x m(x)\mathrm{rate}(x,x{+}1)(f(x{+}1)-f(x))^2
+\ge\tfrac\delta2\norm{\nabla f}_2^2$ (drop all non-nearest-neighbour terms;
+they are nonnegative).
+\item[(d)] \underline{Energy identity:} for $u(t):=\sum_x m(x)\,p_t(x)^2$
+(the $\ell^2(m)$ norm of the kernel started at the fixed origin --- adapt to
+however \texttt{IsTransitionKernel} presents the forward/backward equations),
+$u'(t)=-2\,\ee(p_t)$, from the Kolmogorov equation and reversibility.
+\underline{Sanctioned fallback:} if the abstract kernel structure genuinely does
+not provide enough regularity to differentiate under the sum, this single
+identity (or its integrated form
+$u(t)+2\int_s^t\ee(p_\tau)\,d\tau=u(s)$) may enter as ONE named hypothesis on
+the structure; everything else must be proved.
+\item[(e)] \underline{Iteration:} $\norm{p_t}_{\ell^1(m)}$ is conserved/bounded
+($\le c_2/c_1$ appropriately normalised); Tier 1 + (c) give
+$u'\le-\kappa\,u^3$ with $\kappa=\kappa(c_1,c_2,\delta)>0$; the ODE comparison
+(for a nonincreasing $u\ge0$ with $u'\le-\kappa u^3$, one has
+$u(t)\le(2\kappa t)^{-1/2}$ --- integrate $-u'/u^3\ge\kappa$) yields
+$u(t)\le C/\sqrt t$.
+\end{itemize}
+
+\section*{Tier 3: from on-diagonal to the uniform bound}
+
+\begin{itemize}
+\item[(f)] By Cauchy--Schwarz and the semigroup property (Chapman--Kolmogorov),
+$p_{2t}(r)\ \le$ (a product of two time-$t$ $\ell^2(m)$ norms, weighted by the
+$m$-bounds) $\le\ C'\,u(t)^{1/2}\cdot(\text{const})\ \le\ C''/\sqrt t$ ---
+carry the $c_1,c_2$ factors explicitly.
+\item[(g)] For $t\le1$: $p_t(r)\le1$ (probabilities), and
+$1\le\sqrt2/\sqrt{1+t}$. Combine (f)--(g) into the stated
+$\exists C,\ \forall t\ge0:\ p_t(r)\le C/\sqrt{1+t}$.
+\end{itemize}
+
+\begin{remark}[hygiene and fallbacks]
+(1) Search Mathlib first for any usable pieces (discrete Sobolev/Nash
+inequalities, ODE comparison lemmas, Gronwall variants); reuse what exists.
+(2) The only sanctioned named hypothesis is the energy identity (d), and only
+if the kernel structure forces it; the Nash inequality (Tier 1), the
+iteration (e), and the off-diagonal step (f) must be proved outright.
+(3) Numerical constants are free --- any explicit $C(c_1,c_2,\delta,\Lambda,\varrho)$
+suffices; do not chase optimality.
+(4) Mind $t=0$ and the degenerate cases ($u$ may be $+\infty$ if the kernel
+were not square-summable --- it is, being bounded by $1$ and summable; record
+this).
+(5) Report in the summary whether (d) was proved or hypothesised.
+\end{remark}
+
+\end{document}

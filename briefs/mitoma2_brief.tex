@@ -1,0 +1,149 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\eps}{\varepsilon}\newcommand{\Sch}{\mathcal{S}}\newcommand{\Schp}{\mathcal{S}'}
+
+\title{Formalization brief (Mitoma campaign, 2):\\
+separability of Schwartz space and compact polars in the pointwise dual}
+\date{10 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Context.} Task M1 (\texttt{mitoma1\_report.md}, attached ---
+read it first) delivered the Fr\'echet package:
+\texttt{CompleteSpace}/\texttt{BaireSpace}/\texttt{BarrelledSpace} for
+Mathlib's canonical \texttt{SchwartzMap}, plus the Banach--Steinhaus
+dominating-seminorm corollary. This task builds the remaining
+\emph{spatial} infrastructure for Mitoma's tightness criterion: a countable
+dense subset of $\Sch(\R,\R)$ (Mathlib has NO separability for
+\texttt{SchwartzMap} --- verified) and the compact confinement sets in the
+dual. The campaign models $\Schp$ as Mathlib's
+\texttt{PointwiseConvergenceCLM}, i.e.\ $\Sch(\R,\R)\to L_{pt}[\R]\ \R$
+(notation \texttt{->L\_pt}), whose API
+(\texttt{isEmbedding\_coeFn}, \texttt{tendsto\_iff\_forall\_tendsto},
+\texttt{evalCLM}, \texttt{instT2Space}, \texttt{withSeminorms},
+\texttt{equivWeakDual}) is available at our Mathlib pin.
+
+\medskip
+\noindent\textbf{Goal.} A NEW self-contained file
+\texttt{TypeDDecouplingSchwartzDual.lean} (Mathlib imports only; may import
+\texttt{TypeDDecouplingSchwartzFrechet}; no existing project file touched;
+whole project must build; standard axioms only; no
+\texttt{axiom}/\texttt{sorry}).
+
+\section*{Part A: separability of $\Sch$}
+
+\begin{itemize}
+\item[(A1)] \textbf{Main result:}
+\texttt{SeparableSpace ($\Sch(\R,\R)$)} --- equivalently
+\texttt{SecondCountableTopology}, which by M1's metrizability is the same;
+deliver whichever instance is most useful downstream (ideally both, one
+derived from the other). General $\Sch(E,F)$ (finite-dimensional $E$,
+separable complete $F$) is welcome if it comes at no extra cost; $\R,\R$
+suffices for the campaign.
+
+PRIMARY ROUTE (structural): the weighted-derivative maps
+$T_{k,n}:\phi\mapsto\big(x\mapsto\|x\|^k\,\partial^n\phi(x)\big)$ are
+linear, jointly injective ($T_{0,0}=$ inclusion), and by definition of
+\texttt{schwartzSeminormFamily} the Schwartz topology is exactly the
+initial topology of the $T_{k,n}$ into sup-norm spaces. Each $T_{k,n}\phi$
+vanishes at infinity (Schwartz decay: $p_{k+1,n}$ finite). Hence $\Sch$
+embeds topologically into a COUNTABLE product of $C_0(\R)$-type spaces.
+Then: $C_0(\R)$ is separable (see (A2)); a countable product of separable
+metrizable spaces is second countable; second countability is hereditary;
+conclude. (If Mathlib's zero-at-infinity type ($C_0$) lacks the needed
+plumbing, an embedding into bounded continuous functions restricted to a
+separable closed subspace, or any equivalent honest route, is sanctioned.)
+\item[(A2)] \textbf{Separability of $C_0(\R,\R)$} (or of the concrete
+sup-norm closure used in (A1)): via compactly supported approximations plus
+Stone--Weierstrass on compacts
+(\texttt{polynomialFunctions.topologicalClosure} with rational
+coefficients, or rational piecewise-linear functions). If Mathlib already
+has separability/second countability for \texttt{ZeroAtInftyContinuousMap}
+or for $C(K,\R)$ on compact metric $K$ --- SEARCH FIRST --- use it.
+
+FALLBACK ROUTE for (A1)+(A2): an explicit countable dense family in
+$\Sch(\R,\R)$ (e.g.\ cutoffs $\phi\cdot\chi(x/R)$, $R\in\mathbb Q$, from
+\texttt{ContDiffBump}, followed by mollification/discretization with
+rational data). Any honest route is acceptable; the structural route is
+suggested because it minimizes hard analysis.
+\item[(A3)] \textbf{Countable-reduction corollary} (what task M3 consumes):
+fix a countable dense $D\subseteq\Sch(\R,\R)$ (exists by (A1)). For every
+$F$ in the dual and every CONTINUOUS seminorm $q$ on $\Sch$:
+if $|F\phi|\le q(\phi)$ for all $\phi\in D$, then $|F\phi|\le q(\phi)$ for
+all $\phi$ (continuity of $F$ and of $q$, density). Package $D$ as a named
+definition so later tasks quantify over it.
+\end{itemize}
+
+\section*{Part B: compact polars in the pointwise dual}
+
+Write \texttt{SchDual} $:=\Sch(\R,\R)\to L_{pt}[\R]\ \R$
+(\texttt{PointwiseConvergenceCLM}).
+\begin{itemize}
+\item[(B1)] \textbf{Polar balls.} For a seminorm $q$ on $\Sch(\R,\R)$
+define \texttt{polarBall} $q:=\{F:\texttt{SchDual}\mid\forall\phi,\
+|F\phi|\le q(\phi)\}$ with the basic API (membership, monotonicity in $q$,
+zero membership; relate to Mathlib's \texttt{LinearMap.polar} of the
+canonical pairing where that shortens proofs --- the pin also has
+\texttt{PointwiseConvergenceCLM.equivWeakDual} and the
+\texttt{WeakDual}/\texttt{LinearMap} polar lemmas).
+\item[(B2)] \textbf{Compactness:} for CONTINUOUS $q$,
+\texttt{IsCompact (polarBall $q$)} in the pointwise topology. Route
+(Tychonoff, no Ascoli needed): push through
+\texttt{PointwiseConvergenceCLM.isEmbedding\_coeFn} into the pi topology
+$\Sch\to\R$; the image of \texttt{polarBall} $q$ is
+$\{f\mid f\text{ linear},\ \forall\phi,\ |f\phi|\le q(\phi)\}$: it is closed
+in the product (additivity/homogeneity and the bound are closed,
+coordinatewise conditions) and contained in the compact box
+$\prod_\phi[-q(\phi),q(\phi)]$ (Tychonoff:
+\texttt{Pi.compactSpace}/\texttt{isCompact\_pi\_infinite} on
+\texttt{Set.Icc}); crucially, a pointwise limit satisfying the bound is
+CONTINUOUS because it is dominated by the continuous seminorm $q$
+(continuity at $0$), so the image is exactly that closed subset and
+compactness pulls back along the embedding.
+\item[(B3)] \textbf{Countable cofinal family:} every family
+$\mathcal F\subseteq$ \texttt{SchDual} dominated by SOME continuous
+seminorm lies in \texttt{polarBall} $q$ for $q$ of the special form
+$c\cdot\sup_{i\in S}p_i$ with $c\in\mathbb Q_{>0}$, $S$ a finite subset of
+the $\mathbb N\times\mathbb N$ seminorm index set (use Mathlib's
+\texttt{WithSeminorms} characterization of continuous seminorms /
+seminorm boundedness --- search for the exact lemma). Hence the polar
+balls over this COUNTABLE index family are cofinal among equicontinuous
+sets. Combined with M1's
+\texttt{exists\_continuous\_seminorm\_of\_pointwise\_bounded}, conclude the
+packaged statement: a pointwise-bounded family in \texttt{SchDual} is
+contained in a compact \texttt{polarBall} of the special rational form.
+\item[(B4)] \textbf{Membership is countably checkable:} for continuous
+$q$ and the countable dense $D$ of (A3):
+$F\in$ \texttt{polarBall} $q\iff\forall\phi\in D,\ |F\phi|\le q(\phi)$
+(direct from (A3)). This is the measurability hook for task M3 (the
+confinement event becomes a countable intersection of evaluation events);
+if a \texttt{MeasurableSet} statement for \texttt{polarBall} in the
+evaluation ($\sigma$-algebra generated by \texttt{evalCLM}) form is cheap,
+deliver it too, but the iff is the required deliverable.
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) SEARCH FIRST: separability of $C_0$/$C(K)$, hereditary second
+countability, countable products, the \texttt{WithSeminorms}
+continuous-seminorm bound, and the polar API may all exist in sharper form
+than cited here.
+(2) Fallback ladder: full delivery $\to$ Part B complete $+$ Part A via the
+explicit-family fallback $\to$ Part B complete $+$ (A1) as a documented
+residual $\to$ honest report. Part B does not depend on Part A except in
+(B4).
+(3) FIDELITY: all topology statements refer to Mathlib's canonical
+instances (\texttt{PointwiseConvergenceCLM} topology, \texttt{SchwartzMap}
+topology); no re-topologization.
+(4) Report as \texttt{mitoma2\_report.md}: instance/lemma names, the route
+taken for Part A, and any obstruction encountered.
+\end{remark}
+
+\end{document}

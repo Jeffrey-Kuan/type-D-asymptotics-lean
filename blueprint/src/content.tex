@@ -1,0 +1,971 @@
+% Blueprint content — assembled 2026-07-11
+\chapter*{Conventions}
+This blueprint maps the Lean formalization of the paper. An item marked
+\emph{formalized} (green in the dependency graph) is proved in Lean with
+no \texttt{sorry}, from Mathlib primitives, under the standard axioms.
+Several assembly theorems consume explicitly named hypothesis bundles
+(documented in each entry); these are recorded as hypotheses of the Lean
+statements, not hidden assumptions. At the time of writing the single
+remaining \texttt{sorry} is the Mitoma citation (its supporting theory is
+complete; see the final chapter).
+
+% Blueprint content for: Correlated and uncorrelated long-time asymptotics of type D ASEP
+% CORE FRAGMENT (refreshed against the current Lean tree, 2026-07).
+% Drop into blueprint/src/content.tex of a `leanblueprint new` scaffold, alongside the
+% Skorokhod fragment (labels sk-*) and the Schwartz/Hermite/Mitoma fragment (labels mit-*),
+% which are maintained separately.  External labels referenced here and supplied by those
+% fragments: thm:sk-aldous, def:sk-space, thm:mit-confinement.
+%
+% Conventions:
+%   \lean{...}   — fully qualified Lean name(s); every name below verified by grep against
+%                  the current sources in type-D-asymptotics/.
+%   \leanok      — the declaration is sorry-free in the current build.  The project's ONE
+%                  remaining sorry is thm_mitoma (TypeDDecouplingEW.lean); its entry below
+%                  carries no \leanok.
+%   \uses{...}   — dependency-graph edges.
+%
+% Numbering follows typeD_decoupling-draft-rev4.
+
+\chapter{The model and exact structure}
+
+\begin{definition}[type D ASEP rates, $n=\infty$]\label{def:rates}
+  \lean{TypeDDecoupling.rate1R_10, TypeDDecoupling.rate1R_30, TypeDDecoupling.rate1L_03}
+  \leanok
+  The two-species interacting particle system on $\mathbb Z$ with states
+  $\{0,1,2,3\}$ per site and the $n=\infty$ jump-rate table of eq.~(eq:rates):
+  hops at rates $1, q^2$, pair moves at $1, q^4$, swap at $q^2$, merge at
+  $1-q^2$, split at $q^2(1-q^2)$.
+\end{definition}
+
+\begin{definition}[finite-$n$ rates via analytic continuation]\label{def:nrates}
+  \lean{TypeDDecouplingFiniteN.betaR, TypeDDecouplingFiniteN.sigmaR}
+  \leanok
+  The finite-$n$ table of eq.~(eq:nrates) with
+  $\beta_n = q^{1-2n}+q^{2n-1}$, $\sigma_n = (q^{n-1}-q^{1-n})^2$, encoded through
+  the real parameter $r = q^n$ (so every real $r$, not only integer $n$, is covered).
+\end{definition}
+
+\begin{proposition}[current decoupling; Prop.~3.1]\label{prop:decouple}
+  \lean{TypeDDecoupling.current_decoupling, TypeDDecouplingFiniteN.current_decoupling_finiteN}
+  \leanok
+  \uses{def:rates, def:nrates}
+  At every $n$ (and every real $q^n$), each species' marginal current is that of an
+  autonomous single-species ASEP: the species-$1$ transfer rates are independent of
+  the species-$2$ occupancy, with the $n$-dependence a pure time change $\beta_n$.
+\end{proposition}
+
+\begin{proposition}[vanishing cross coefficients; Prop.~3.2]\label{prop:cross}
+  \lean{TypeDDecoupling.crossMobility_eq_zero, TypeDDecoupling.crossCompressibility_eq_zero}
+  \leanok
+  \uses{def:rates}
+  Under the blocking measure the cross mobility and cross compressibility vanish
+  identically in the fugacities: $\mathbb E_\nu[V_x] = 0$ and
+  $\mathrm{Cov}_\nu(\eta_{1,x},\eta_{2,y}) = 0$.
+\end{proposition}
+
+\begin{theorem}[orthogonal $q$-Krawtchouk self-duality; Thm.~2.5(ii)]\label{thm:dual}
+  \lean{TypeDDecoupling.thm_dual, TypeDDecoupling.cor_tri}
+  \leanok
+  \uses{def:rates}
+  The $n=\infty$ type D ASEP is self-dual with respect to the orthogonal
+  $q$-Krawtchouk product duality; the $\alpha\to0$ coefficient extraction yields the
+  bounded triangular duality $D^{\mathrm{tri}}$.  (Sorry-free assembly from the cited
+  CFG20/REU interlacing inputs, stated in \texttt{TypeDDecouplingDuality.lean}.)
+\end{theorem}
+
+\chapter{Kernel theory (paper \S4--5)}
+
+\begin{lemma}[on-diagonal heat-kernel bound; Lem.~4.1]\label{lem:free}
+  \lean{TypeDDecoupling.lem_free}
+  \leanok
+  \uses{lem:nash, lem:semigroup}
+  For a driftless, finite-range, reversible walk on $\mathbb Z$ with measure bounds
+  $c_1 \le m \le c_2$, exit rate $\le \Lambda$ and nearest-neighbour conductance
+  $\ge \delta > 0$: $\sup_r \mathbb P(X_t = r) \le C/\sqrt{1+t}$ with
+  $C = C(c_1,c_2,\delta,\Lambda,\varrho)$ explicit.  Carries the faithful a-priori
+  hypothesis $p \le 1$; the full Nash/CKS argument runs on the exponential semigroup
+  (\texttt{TypeDDecouplingCKS.free\_bound}), with $p$ identified with the semigroup
+  kernel by a weighted-$\ell^1$ Gr\"onwall uniqueness argument.
+\end{lemma}
+
+\begin{lemma}[discrete Nash toolkit]\label{lem:nash}
+  \lean{TypeDDecouplingNash.nash_ineq, TypeDDecouplingNash.nash_ode_bound, TypeDDecouplingNash.nash_pointwise_bound}
+  \leanok
+  The 1D Agmon bound, the discrete Nash inequality
+  $\|f\|_2^6 \le 4\|f\|_1^4\|\nabla f\|_2^2$, the ODE iteration
+  $u' \le -\kappa u^3 \Rightarrow u \le 1/\sqrt{2\kappa t}$, and the pointwise assembly.
+\end{lemma}
+
+\begin{lemma}[exponential semigroup of a bounded rate matrix]\label{lem:semigroup}
+  \lean{TypeDDecouplingSemigroup.exists_forward_generator}
+  \leanok
+  The forward generator of a finite-range walk with bounded exit rates is a bounded
+  operator on $\ell^1(\mathbb Z)$ ($\|A\| \le 2\Lambda$); its exponential semigroup
+  satisfies positivity, mass conservation, Chapman--Kolmogorov, reversibility, and the
+  energy identity $u' = -2\mathcal E$ (continued in the CKS files).
+\end{lemma}
+
+\begin{lemma}[defected local CLT; Lem.~4.2]\label{lem:Rlclt}
+  \lean{TypeDDecoupling.lem_Rlclt}
+  \leanok
+  \uses{lem:free}
+  For the relative walk with sticky origin (split rate $\nu_{\mathrm{sp}} = 2q^2(1-q^2)$,
+  merge rate $1-q^2$), uniformly over $q \in [q_0,1)$ in the window
+  $\nu_{\mathrm{sp}} t \le K$:
+  $\mathbb P(R_t = r) \le C(K,q_0)/\sqrt{1+t} + \delta_{r,0}e^{-\nu_{\mathrm{sp}}t}$.
+  Sorry-free: the excursion/renewal representation enters as the single documented
+  hypothesis bundle \texttt{hrenew} (occupation, zero-decomposition, renewal integral);
+  all convolution assemblies and the $q$-uniform constant are proved.
+\end{lemma}
+
+\begin{lemma}[Kolmogorov--Rogozin; Lem.~4.3]\label{lem:KR}
+  \lean{TypeDDecoupling.kolmogorov_rogozin}
+  \leanok
+  For independent integer-valued $Y_1,\dots,Y_n$:
+  $\sup_x \mathbb P(\sum_j Y_j = x) \le C\big(\sum_j(1-\mathcal Q(Y_j))\big)^{-1/2}$
+  with universal $C$.  Proved from scratch (lattice Esseen + product-over-gaps),
+  core \texttt{TypeDDecoupling.KR.KR\_abstract}.
+\end{lemma}
+
+\begin{lemma}[skeleton concentration; Lem.~4.4]\label{lem:Slclt}
+  \lean{TypeDDecoupling.lem_Slclt}
+  \leanok
+  \uses{lem:KR}
+  Conditionally on the unsigned skeleton, the sum coordinate's largest atom is
+  $\le C(\delta)/\sqrt{1+M}$; the ambiguous-jump count dominates a Poisson and
+  $\mathbb P(M < t/2) \le e^{-ct}$ with $c = (1-\log 2)/2$.
+  (Statement strengthened: universal constant.)
+\end{lemma}
+
+\begin{theorem}[Karamata Tauberian, constant $L$; Thm.~4.5]\label{thm:karamata}
+  \lean{TypeDDecoupling.karamata_tauberian}
+  \leanok
+  If $\omega(\lambda) = \int_0^\infty e^{-\lambda t}p(t)\,dt \sim c\lambda^{-\rho}$ as
+  $\lambda \downarrow 0$ with $p \ge 0$, then
+  $\int_0^s p \sim c\,s^\rho/\Gamma(\rho+1)$ as $s \to \infty$.
+  (Tauberian direction, general $\rho > 0$; core
+  \texttt{TypeDDecouplingKaramata.tauberian\_isEquivalent}.)
+\end{theorem}
+
+\begin{lemma}[occupation asymptotics; Lem.~4.6]\label{lem:tau}
+  \lean{TypeDDecoupling.lem_tau}
+  \leanok
+  \uses{thm:karamata, lem:free}
+  For the recurrent reversible walk agreeing off a finite set with the symmetric
+  rate-$a$ walk: $\tau_r(s) \sim m(r)\sqrt{s/(\pi a)}$.
+\end{lemma}
+
+\begin{lemma}[same-species channel via Sch\"utz's formula; Lem.~5.1]\label{lem:asep}
+  \lean{TypeDDecoupling.lem_asep}
+  \leanok
+  \uses{lem:bethe}
+  The same-species two-particle dual kernel obeys $p_t(\xi,\xi') \le C(q)/(1+t)$.
+  Now unconditional: the kernel is synthesised as the Sch\"utz reflection series
+  \texttt{asepKernel q := Bethe.asepReflect 1 q\textasciicircum2}, and the bound follows
+  from \texttt{TypeDDecoupling.Bethe.asepReflect\_decay} with no extra hypothesis.
+\end{lemma}
+
+\begin{lemma}[Bethe reflection representation]\label{lem:bethe}
+  \lean{TypeDDecoupling.Bethe.Smatrix_boundary, TypeDDecoupling.Bethe.asepReflect}
+  \leanok
+  The exclusion contact condition forces the reflection amplitude
+  $S = -\frac{r_R-(r_R+r_L)z_2+r_Lz_1z_2}{r_R-(r_R+r_L)z_1+r_Lz_1z_2}$; the geometric
+  reflection series (ratio $\rho = r_L/r_R$) satisfies the free equation off contact,
+  the boundary identity, and decays like $C/(1+t)$.
+\end{lemma}
+
+\begin{theorem}[two-particle kernel bound; Thm.~5.2]\label{thm:kernel}
+  \lean{TypeDDecoupling.thm_kernel}
+  \leanok
+  \uses{lem:Rlclt, lem:Slclt, lem:asep, lem:tau}
+  The type D two-particle dual kernel obeys
+  $p_u(\xi,\xi') \le C[(1+u)^{-1} + e^{-\nu_{\mathrm{sp}}u}(1+u)^{-1/2}]$.
+  Sorry-free assembly: the kernel is factored through sum/relative marginals
+  (hypothesis \texttt{hfact}), whose bounds are the cited inputs
+  \ref{lem:Slclt}/\ref{lem:Rlclt}.
+\end{theorem}
+
+\chapter{The Edwards--Wilkinson regime (paper \S6)}
+
+\begin{proposition}[current orthogonal to the bound-pair mode; Cor.~6.8]\label{prop:ew-sym}
+  \lean{TypeDDecoupling.prop_sym}
+  \leanok
+  \uses{prop:decouple, prop:cross}
+  For all densities $\rho_1,\rho_2 \in (0,1)$,
+  $\langle W_{i,x}, B_z\rangle = 0$ for every $z$, where
+  $B_z = (\eta_{1,z}-\rho_1)(\eta_{2,z}-\rho_2)$.  Proved from the equilibrium
+  product (independence) structure of the blocking measure (the \texttt{EWModel}
+  structure): the species-$i$ current depends only on species-$i$ occupations, so it
+  factorizes against the opposite-species centred field, whose mean vanishes.
+\end{proposition}
+
+\begin{lemma}[orthogonality; Lem.~6.7]\label{lem:orth}
+  \lean{TypeDDecoupling.lem_orth}
+  \leanok
+  \uses{prop:cross}
+  $\langle V_x, \eta_{i,y}-\rho_i\rangle = 0$ for every species $i$ and sites $x,y$:
+  $V_x$ has no order-one component, its lowest order being two.  Proved by the general
+  involution argument \texttt{EqvarOrth.expect\_V\_mul\_occ\_eq\_zero} (swapping the
+  other species across the bond reverses the sign of $V_x$ while fixing the blocking
+  weight), realised concretely as the covariance \texttt{ewCrossDensityCov} over a
+  finite blocking-measure window.
+\end{lemma}
+
+\begin{lemma}[equal-time variance of the cross-bracket density; Lem.~6.11]\label{lem:ew-eqvar}
+  \lean{TypeDDecoupling.lem_eqvar}
+  \leanok
+  \uses{lem:orth}
+  With $\Theta^N = N^{-1}\sum_x \varphi'(x/N)^2 V_x$:
+  $\mathbb E_\nu[(\Theta^N)^2] \le C(\varphi)N^{-1}$, via the exact cancellation
+  $\mathbb E[V_xV_y]=0$ for $|x-y|\ge2$ and $|V|\le1$
+  (\texttt{EqvarOrth.expect\_sq\_le}).  The boundedness hypothesis on $\varphi'$ is
+  genuinely needed (the bare statement over arbitrary coefficients is false).
+\end{lemma}
+
+\begin{lemma}[sector comparison at compensated fugacity; Lem.~6.9]\label{lem:sector}
+  \lean{TypeDDecoupling.lem_sector, TypeDDecoupling.lem_sector_transfer}
+  \leanok
+  With $\beta_i = \alpha_i/(1+\alpha_i)$: the blocking measure and the reweighted
+  measure have the same sector conditionals, uniformly comparable sector masses
+  ($\log M \le 2C_0$, $C_0 = A(1+\tfrac{8\beta}{1-\beta})$, $A = 18cK^2$ under the
+  regime-A scaling), and the correlation transfer inequality holds.  Replaces a FALSE
+  original (the uncompensated comparison has $M = e^{\Theta(N)}$); cores
+  \texttt{TypeDDecoupling.Sector.sector\_comparison\_single},
+  \texttt{TypeDDecoupling.Sector.correlation\_transfer}.
+\end{lemma}
+
+\begin{lemma}[dressed mass; Lem.~6.12]\label{lem:eps}
+  \lean{TypeDDecoupling.lem_eps}
+  \leanok
+  \uses{lem:orth}
+  $\|V_z^{(\mathrm{dr})}\|^2_{L^2(\varpi)} \le \varepsilon_N =
+  (q_N^{-4|\Lambda|}-1)^2 = O(N^{-2}) \to 0$, uniformly over $z$ in the field window,
+  via the exact identity $A_z = q^{-2(L_1+L_2)}V_z$ and the projection inequality
+  (core \texttt{TypeDDecoupling.DressedMass.dressedMass\_bond\_le}); the dressed mass
+  is realised concretely on the regime-A window with $q_N = 1-1/(N+2)^2$.
+\end{lemma}
+
+\begin{proposition}[cross-bracket concentration; Prop.~6.14]\label{prop:conc}
+  \lean{TypeDDecoupling.prop_conc}
+  \leanok
+  \uses{lem:sector, lem:eps, lem:ew-eqvar, lem:orth, thm:kernel}
+  $\mathbb E_\nu[\langle M_1^N,M_2^N\rangle(\varphi,t)^2] \le
+  C(\varphi,c)\,t\,(N^{-1} + N^{-2}\log_+(tN^2) + t\,\varepsilon_N) \to 0$
+  (condition (X)).  Sorry-free from the abstract estimate
+  \texttt{TypeDDecoupling.Conc.conc\_master}; the process-level inputs (transfer bound,
+  mass-sector kernel split, equal-time bound, stationarity identity) enter as the
+  named hypothesis \texttt{hproc}.  The truncated $\log_+$ is a fidelity repair: the
+  bare $\log$ would be false for small $t$.
+\end{proposition}
+
+\begin{proposition}[drift; Prop.~6.16]\label{prop:drift}
+  \lean{TypeDDecoupling.prop_drift}
+  \leanok
+  \uses{prop:decouple}
+  $\Gamma_i^N(\varphi,\cdot) \to D\,Y_i(\Delta\varphi,\cdot)$ in $L^2$ (condition (D)).
+  Quantitative cores proved outright: summation-by-parts + Taylor
+  (\texttt{TypeDDecoupling.Drift.drift\_sbp\_bound}) and the correction second moment
+  (\texttt{TypeDDecoupling.Drift.corr\_second\_moment}); the $\mathcal S'(\mathbb R)$
+  wrapper enters as the hypothesis \texttt{hpin}.
+\end{proposition}
+
+\begin{lemma}[Dynkin decomposition]\label{lem:dynkin}
+  \lean{TypeDDecoupling.lem_dynkin}
+  \leanok
+  $M^f_t = f(\eta_t)-f(\eta_0)-\int_0^t Lf(\eta_s)ds$ is a martingale against
+  Mathlib's $\mathbb R$-indexed \texttt{Martingale} (core
+  \texttt{TypeDDecoupling.dynkin\_martingale}, from a faithful Markov--Feller bundle),
+  the bracket is definitionally the carr\'e-du-champ time integral
+  (\texttt{dynkinBracketDef}; the identification with the predictable bracket is the
+  cited Ethier--Kurtz Ch.~4 fact), and the integrated covariance identity
+  $\mathbb E[M^f_tM^g_t] = \mathbb E\int_0^t \Gamma(f,g)(\eta_s)ds$ is proved
+  (core \texttt{TypeDDecoupling.dynkin\_L2}).  The former opaque predicates are retired.
+\end{lemma}
+
+\begin{theorem}[Mitoma's tightness criterion]\label{thm:ew-mitoma}
+  \lean{TypeDDecoupling.thm_mitoma}
+  \uses{def:sk-space, thm:mit-confinement}
+  A sequence of c\`adl\`ag $\mathcal S'(\mathbb R)$-valued processes is tight in
+  $D([0,T];\mathcal S'(\mathbb R))$ iff, for every $\varphi \in \mathcal S(\mathbb R)$,
+  the real-valued sequence $(Z^N(\varphi,\cdot))$ is tight in $D([0,T];\mathbb R)$.
+  Stated over the opaque objects \texttt{SchwartzDistModel}, \texttt{distTight},
+  \texttt{realTight}, \texttt{mitomaEval}.  \emph{This is the one remaining citation
+  sorry of the project; see the Mitoma campaign chapter for the machinery built to
+  discharge it} (nuclear confinement on the Hermite scale, \ref{thm:mit-confinement}).
+\end{theorem}
+
+\begin{proposition}[Aldous's tightness criterion]\label{prop:ew-aldous}
+  \lean{TypeDDecoupling.prop_aldous}
+  \leanok
+  \uses{thm:sk-aldous, def:sk-space}
+  Restated as a genuine theorem over probability spaces (no longer a citation): a
+  family $(X_i)$ of $D([0,1];\mathbb R)$-valued random elements on probability spaces
+  $(\Omega_i, P_i)$, each adapted to a right-continuous filtration, whose laws are
+  (i) uniformly bounded in sup-norm in probability and (ii) satisfy the Aldous
+  stopping-time condition ($\alpha_i(\delta,\varepsilon) \to 0$ uniformly in $i$),
+  has tight pushforward laws on the Skorokhod space
+  (\texttt{IsTightMeasureSet}).  Proved by direct application of
+  \texttt{SkorokhodBasic.aldous\_tightness} (\ref{thm:sk-aldous}).
+\end{proposition}
+
+\begin{lemma}[Gaussian fdd from the martingale bracket]\label{lem:ew-gaussfdd}
+  \lean{TypeDDecoupling.mpConvBracket_gaussian_fdd, TypeDDecoupling.MartingaleGaussian.martingale_charFun_gaussian}
+  \leanok
+  \uses{thm:mcleish}
+  From the de-opaqued bracket condition \texttt{mpConvBracket} --- per test function
+  $\varphi$ and time $t$, a martingale-difference array with deterministic bracket
+  $2\chi Dt\,\sigma(\varphi)$ and a stopped/truncated companion --- the pairing
+  characteristic function of $Z_t^N$ converges to the centered Gaussian
+  $\exp(-(2\chi Dt\,\sigma(\varphi))u^2/2)$; via the stopped-array adapter and the
+  project's own martingale CLT.
+\end{lemma}
+
+\begin{theorem}[equilibrium fluctuations / OU martingale problem; Thm.~6.2]\label{thm:ew-mp}
+  \lean{TypeDDecoupling.thm_mp}
+  \leanok
+  \uses{lem:ew-gaussfdd, lem:dynkin, thm:ew-mitoma}
+  A process whose Dynkin drift converges to $DZ(\Delta\varphi)$
+  (\texttt{mpConvDrift}), whose bracket converges to $2\chi Dt\|\partial\varphi\|^2$
+  (\texttt{mpConvBracket}), and which is Mitoma-tight, converges in law to the
+  stationary OU solution.  The Gaussian/uniqueness core is \emph{proved} from
+  \ref{lem:ew-gaussfdd}; only the path-space existence/convergence content enters as
+  the single documented bundle \texttt{MPPathBundle} (riding on the Mitoma/Aldous
+  leaves and the heat-semigroup identification).  Sorry-free.
+\end{theorem}
+
+\begin{lemma}[single-species Gaussianity; Lem.~6.6, condition (N)]\label{lem:ew-gauss}
+  \lean{TypeDDecoupling.lem_gauss}
+  \leanok
+  \uses{thm:ew-mp, lem:ew-bracketn}
+  Each single-species fluctuation field converges to the Gaussian OU/EW field with
+  diagonal bracket $2\chi Dt\|\partial\varphi\|^2$, $\chi = \rho(1-\rho)$.  Proved
+  outright as the single-field case of \ref{thm:ew-mp} (same faithful hypotheses);
+  the Dittrich--G\"artner reference is demoted to a classical-instantiation citation.
+\end{lemma}
+
+\begin{lemma}[finite-$N$ WASEP bracket computation]\label{lem:ew-bracketn}
+  \lean{TypeDDecoupling.BracketN.Ep_bracketField, TypeDDecoupling.BracketN.bracketField_mean_tendsto, TypeDDecoupling.BracketN.bracketVar_le, TypeDDecoupling.BracketN.timeIntegral_L2_concentration}
+  \leanok
+  The finite-$N$ ground truth making the bracket hypothesis of \ref{lem:ew-gauss}
+  faithful for the stationary single-species WASEP under the Bernoulli($\rho$)
+  product weight: exact equilibrium mean $2\chi D\|\varphi'\|^2$ with
+  $D = (1+q^2)/2$, variance $O(1/N)$, and $L^2$ concentration of the time-integrated
+  bracket under stationarity.
+\end{lemma}
+
+\begin{theorem}[decoupled EW limit; Thm.~6.5]\label{thm:ewmain}
+  \lean{TypeDDecoupling.thm_ewmain}
+  \leanok
+  \uses{prop:conc, prop:drift, lem:dynkin, lem:sector, lem:eps, thm:ew-mp, lem:ew-gauss, thm:ew-mitoma, prop:ew-aldous}
+  Under $q = 1-c/N^2$ the rescaled density-fluctuation pair is tight in
+  $D([0,T];\mathcal S'(\mathbb R))$ and converges to two independent stationary
+  Edwards--Wilkinson (OU) fields, at arbitrary densities; the limiting cross bracket
+  vanishes (condition (X)) and the corrected sector comparison holds.  Rewired to two
+  \emph{real-tightness} hypotheses $ht_1, ht_2$ (component tightness of the evaluated
+  processes --- exactly what \ref{prop:ew-aldous} produces), fed through
+  \ref{thm:ew-mitoma} for the $\mathcal S'$-tightness; the OU limits come from
+  \ref{thm:ew-mp} and \ref{lem:ew-gauss}, the decoupling from \ref{lem:eps},
+  \ref{prop:conc} and \ref{lem:sector}.  The declaration itself is sorry-free; it
+  inherits the project's single remaining citation sorry transitively through its use
+  of \ref{thm:ew-mitoma}.
+\end{theorem}
+
+\chapter{The initial-condition crossover (paper \S7)}
+
+\begin{theorem}[McLeish martingale CLT]\label{thm:mcleish}
+  \lean{TypeDDecoupling.MartingaleCLT.core_charFun_tendsto, TypeDDecoupling.MartingaleCLT.mcleish_clt}
+  \leanok
+  A martingale difference array with deterministic vanishing jump bound and
+  bracket $\to \sigma^2$ has $\mathbb E[e^{iuS_n}] \to e^{-u^2\sigma^2/2}$, hence
+  converges in law to $N(0,\sigma^2)$
+  (\texttt{TypeDDecoupling.Levy.mcleish\_clt\_unconditional} discharges the L\'evy
+  hypothesis).
+\end{theorem}
+
+\begin{theorem}[L\'evy continuity, $\mathbb R$ and $\mathbb R^2$]\label{thm:levy}
+  \lean{TypeDDecoupling.Levy.levyContinuityℝ, TypeDDecoupling.TwoPhaseBridge.levyContinuityE2}
+  \leanok
+  Pointwise convergence of characteristic functions to that of a given probability
+  measure implies weak convergence (identified-limit form), in one and two
+  dimensions.  (Mathlib master has since gained \texttt{LevyConvergence.lean},
+  post-dating this project's pin --- ours remains load-bearing at the pin.)
+\end{theorem}
+
+\begin{theorem}[two-phase mixture CLT]\label{thm:twophase-abs}
+  \lean{TypeDDecoupling.TwoPhase.twophase_mixture_charFun_tendsto}
+  \leanok
+  \uses{thm:mcleish}
+  A locked-then-diagonal martingale array with random change point
+  $M_n/k_n \to U$ converges at the characteristic-function level to the
+  $U$-mixture of correlation-$u$ bivariate normals.
+\end{theorem}
+
+\begin{proposition}[two-phase CLT for the dual pair; Prop.~7.7]\label{prop:twophase}
+  \lean{TypeDDecoupling.prop_twophase, TypeDDecoupling.prop_twophase_mixture}
+  \leanok
+  \uses{thm:twophase-abs, thm:levy}
+  $(X_1,X_2)(T)/\sqrt{2T}$ converges to the mixture law with
+  $U \sim \min(\mathrm{Exp}(4c),1)$.  Sorry-free via the documented process-level
+  hypothesis bundle \texttt{htwo}.
+\end{proposition}
+
+\begin{lemma}[crossbridge; Lem.~7.3]\label{lem:crossbridge}
+  \lean{TypeDDecoupling.lem_crossbridge}
+  \leanok
+  \uses{lem:crossbridge-finiteL, thm:dual}
+  The joint $q$-Laplace observable from the block equals the dual pair's hitting
+  probability on $\mathbb Z$, with boundary constant $k=0$.  Sorry-free via the
+  documented continuity hypothesis \texttt{hcont}; the finite-$L$ core and the limit
+  mechanism are proved.
+\end{lemma}
+
+\begin{lemma}[finite-$L$ crossbridge, every $L$]\label{lem:crossbridge-finiteL}
+  \lean{TypeDDecoupling.Crossbridge.crossbridge_finiteL}
+  \leanok
+  The identity holds on every finite lattice, by matrix-exponential intertwining
+  and exact block evaluation (modulo its named two-particle interlacing hypothesis).
+\end{lemma}
+
+\begin{theorem}[closed form; Thm.~7.8]\label{thm:closed}
+  \lean{TypeDDecoupling.rhoCorr, TypeDDecoupling.expMin_mean_eq_rhoCorr}
+  \leanok
+  \uses{prop:twophase}
+  $\mathrm{Corr}(X_1,X_2) \to \rho(c) = (1-e^{-4c})/(4c)$, with monotonicity, the
+  $c\to0$ and $c\to\infty$ limits, and the $1/(4c)$ tail.
+\end{theorem}
+
+\begin{proposition}[Bessel--Struve form; Prop.~7.2]\label{prop:struve}
+  \lean{TypeDDecoupling.rhoStruve_bessel_struve}
+  \leanok
+  \uses{thm:closed}
+  $\mathrm{Corr}(G_1^+,G_2^+) = \frac{\pi}{8(\pi-1)c}[1-2e^{-4c}+I_0(4c)-L_0(4c)]$,
+  with \texttt{besselI0}/\texttt{struveL0} as explicit power series.
+\end{proposition}
+
+\chapter{The Tracy--Widom regime (paper \S8)}
+
+\begin{theorem}[TW marginals; Thm.~8.1]\label{thm:marg}
+  \lean{TypeDDecoupling.thm_marg}
+  \leanok
+  \uses{prop:decouple}
+  For every $n$ and each species the standardized current converges to $F_2$.
+  Sorry-free; reduces to the cited single-species step-ASEP input (carried as a
+  hypothesis) via \ref{prop:decouple}.
+\end{theorem}
+
+\begin{theorem}[$q$-Laplace decoupling; Thm.~8.3]\label{thm:cov}
+  \lean{TypeDDecoupling.qmom_contact, TypeDDecoupling.qcov_contact}
+  \leanok
+  \uses{thm:dual}
+  The exact contact representation: $\mathbb E[q^{2N_i}]$ and
+  $\mathrm{Cov}(q^{2N_1},q^{2N_2})$ as absolutely convergent dual sums, the
+  covariance generated entirely by contact.
+\end{theorem}
+
+\begin{definition}[the covariance conjecture; Conj.~8.5]\label{conj:cov}
+  \lean{TypeDDecoupling.covConjecture}
+  \leanok
+  The statement $\mathrm{Cov}(N_1,N_2)(s) \sim c(q)\sqrt s$ with
+  $c(1/2) = 0.099 \pm 0.003$ (Monte Carlo), as a named Prop-valued
+  \emph{definition} --- no truth claim is made; anyone wishing to use it must supply
+  a proof of \texttt{covConjecture} explicitly.
+\end{definition}
+
+% Blueprint fragment: the Skorokhod space D([0,1],R)
+% Sources (all sorry-free; the only `sorry` in the campaign sits inside a comment
+% block of TypeDDecouplingSkorokhodMeasurable.lean and is not a declaration):
+%   TypeDDecouplingSkorokhodBasic.lean, ...Compact.lean, ...Complete.lean,
+%   ...Tight.lean, ...Measurable.lean, ...Aldous.lean
+% All declarations live in namespace SkorokhodBasic.
+
+\chapter{The Skorokhod space $D([0,1],\mathbb{R})$}
+
+\section{The space and Billingsley's metric $d^\circ$}
+
+\begin{definition}[C\`adl\`ag paths and the space $D$]\label{def:sk-space}
+  \lean{SkorokhodBasic.IsCadlag, SkorokhodBasic.Skoro}
+  \leanok
+  A function $f\colon\mathbb{R}\to\mathbb{R}$ is \emph{c\`adl\`ag on $[0,1]$} if it is
+  right-continuous at every $t\in[0,1)$ and has a left limit at every $t\in(0,1]$.
+  The Skorokhod space is formalized as the structure \texttt{Skoro}: an honest function
+  on all of $\mathbb{R}$ that is c\`adl\`ag on $[0,1]$, carries an explicit boundedness
+  witness on $[0,1]$ (automatic for c\`adl\`ag paths, but bundled so the sups in the
+  metric are genuine reals), and is \emph{flat outside $[0,1]$} --- constant $=f(0)$ on
+  $(-\infty,0]$ and constant $=f(1)$ on $[1,\infty)$.  The flat encoding keeps the usual
+  topology of $\mathbb{R}$ on the source and makes $d^\circ(f,g)=0$ imply equality on the
+  nose, so no quotient is needed.
+\end{definition}
+
+\begin{definition}[Time changes and the log-slope norm]\label{def:sk-timechange}
+  \lean{SkorokhodBasic.TimeChange, SkorokhodBasic.logSlopeNorm, SkorokhodBasic.FiniteNorm}
+  \leanok
+  A \emph{time change} is a structure bundling a map $\lambda\colon\mathbb{R}\to\mathbb{R}$
+  that on $[0,1]$ is a strictly increasing continuous bijection fixing $0$ and $1$, and is
+  flat outside $[0,1]$ (matching the path encoding of Definition~\ref{def:sk-space}).
+  Its \emph{log-slope norm} $\|\lambda\|^\circ$ is the supremum of
+  $\bigl|\log\frac{\lambda t-\lambda s}{t-s}\bigr|$ over $0\le s<t\le 1$, and
+  \texttt{FiniteNorm} records that this set of log-slopes is bounded above (the class
+  $\Lambda^\circ$).  Composition \texttt{TimeChange.comp} and the inverse
+  \texttt{TimeChange.symm} (via \texttt{Set.invFunOn}) are provided in place of a literal
+  group instance.
+\end{definition}
+
+\begin{lemma}[Group behaviour of the log-slope norm]\label{lem:sk-logslope}
+  \lean{SkorokhodBasic.logSlopeNorm_symm, SkorokhodBasic.logSlopeNorm_comp_le}
+  \leanok
+  \uses{def:sk-timechange}
+  For finite-norm time changes one has $\|\lambda^{-1}\|^\circ=\|\lambda\|^\circ$ and
+  $\|\lambda\circ\mu\|^\circ\le\|\lambda\|^\circ+\|\mu\|^\circ$, together with the
+  closure facts that inverses and compositions of finite-norm time changes again have
+  finite norm.  These are exactly the two norm identities needed for the symmetry and
+  triangle inequality of $d^\circ$, and (via
+  \texttt{timeChange\_dist\_id\_le}) the bound
+  $|\lambda t-t|\le e^{\|\lambda\|^\circ}-1$ used throughout.
+\end{lemma}
+
+\begin{definition}[Billingsley's metric $d^\circ$]\label{def:sk-dcirc}
+  \lean{SkorokhodBasic.supDiff, SkorokhodBasic.dCirc}
+  \leanok
+  \uses{def:sk-space, def:sk-timechange}
+  For $f,g\colon\mathbb{R}\to\mathbb{R}$, $\operatorname{supDiff}(f,g)$ is the supremum of
+  $|f(t)-g(t)|$ over $t\in[0,1]$.  Billingsley's metric is
+  $d^\circ(f,g)=\inf_{\lambda}\max\bigl(\|\lambda\|^\circ,\;
+  \operatorname{supDiff}(f\circ\lambda,\,g)\bigr)$, the infimum running over time changes
+  $\lambda$ of finite log-slope norm.  This is the $J_1$-metric whose Cauchy sequences are
+  well behaved (unlike the more elementary $J_1$ metric with
+  $\sup_t|\lambda t-t|$ in place of $\|\lambda\|^\circ$).
+\end{definition}
+
+\begin{theorem}[$D$ is a metric space under $d^\circ$]\label{thm:sk-metric}
+  \lean{SkorokhodBasic.dCirc_eq_zero, SkorokhodBasic.dCirc_triangle, SkorokhodBasic.instMetricSpaceSkoro}
+  \leanok
+  \uses{def:sk-space, def:sk-dcirc, lem:sk-logslope}
+  $d^\circ$ is symmetric, satisfies the triangle inequality (via the composition bound on
+  log-slope norms), and separates points: $d^\circ(f,g)=0$ forces $f=g$ as elements of
+  \texttt{Skoro} (agreement first at continuity points and at the endpoints, then
+  everywhere on $[0,1]$ by right-density of continuity points and right-continuity, then
+  on all of $\mathbb{R}$ by flatness).  This yields a genuine \texttt{MetricSpace}
+  instance on \texttt{Skoro}, with no quotient construction.
+\end{theorem}
+
+\section{The c\`adl\`ag modulus $w'$}
+
+\begin{definition}[The c\`adl\`ag modulus $w'$]\label{def:sk-modulus}
+  \lean{SkorokhodBasic.modulusSet, SkorokhodBasic.cadlagModulus}
+  \leanok
+  \uses{def:sk-space}
+  Billingsley's modulus $w'_f(\delta)$ is formalized as the infimum of all $\varepsilon\ge 0$
+  admitting a finite partition $0=t_0<t_1<\dots<t_n=1$ whose cells \emph{all} have length
+  $>\delta$ and on each of whose half-open cells $[t_i,t_{i+1})$ the oscillation from the
+  left endpoint value satisfies $|f(x)-f(t_i)|\le\varepsilon$.  Note the nonstandard
+  every-cell convention: \emph{every} cell (not all but the last) must be longer than
+  $\delta$; this is harmless for the $\delta\to 0$ limit, since any finite partition is
+  $\delta$-sparse for $\delta$ below its minimal gap.  The modulus is nonnegative and
+  monotone in $\delta$.
+\end{definition}
+
+\begin{lemma}[Partition lemma and modulus decay]\label{lem:sk-modulus-decay}
+  \lean{SkorokhodBasic.IsCadlag.exists_modulus_partition, SkorokhodBasic.cadlagModulus_tendsto_zero}
+  \leanok
+  \uses{def:sk-space, def:sk-modulus}
+  For every c\`adl\`ag $f$ and $\varepsilon>0$ there is a finite partition
+  $0=t_0<\dots<t_n=1$ with left-endpoint oscillation $<\varepsilon$ on every cell (a greedy
+  left-to-right construction; termination uses the existence of left limits).  As a
+  consequence, for c\`adl\`ag $f$ the modulus satisfies $w'_f(\delta)\to 0$ as
+  $\delta\to 0^+$.  This is the technical primitive behind separability, compactness, and
+  the measurability of paths.
+\end{lemma}
+
+\section{Completeness and Polishness}
+
+\begin{theorem}[Completeness and Polishness of $D$]\label{thm:sk-polish}
+  \lean{SkorokhodBasic.exists_limit_of_rapid, SkorokhodBasic.instCompleteSpaceSkoro, SkorokhodBasic.instSeparableSpaceSkoro, SkorokhodBasic.instPolishSpaceSkoro}
+  \leanok
+  \uses{thm:sk-metric, def:sk-timechange, lem:sk-logslope, lem:sk-modulus-decay}
+  Every rapidly Cauchy sequence ($d^\circ(u_k,u_{k+1})<2^{-k}$) converges: this is
+  Billingsley's Theorem~12.2 via the $\sigma_\infty$ infinite-composition argument, in
+  which the composed time changes converge (geometric log-slope control) and the
+  time-changed paths converge uniformly.  Combined with separability --- the countable
+  dense family of step functions with rational cut points and rational values, produced
+  from the partition lemma and a piecewise-linear time-change alignment --- this makes
+  $D([0,1],\mathbb{R})$ a complete separable metric space, and the
+  \texttt{CompleteSpace}, \texttt{SecondCountableTopology} and \texttt{PolishSpace}
+  instances are installed.
+\end{theorem}
+
+\section{Compactness, the sup-norm, and the tightness bridge}
+
+\begin{theorem}[Compactness sufficiency (Billingsley Thm 12.3, $\Leftarrow$)]\label{thm:sk-compact}
+  \lean{SkorokhodBasic.totallyBounded_of_bdd_of_modulus, SkorokhodBasic.isCompact_closure_of_bdd_of_modulus}
+  \leanok
+  \uses{thm:sk-metric, def:sk-modulus, thm:sk-polish}
+  Let $A\subseteq D$ be uniformly bounded ($|f(t)|\le M$ for all $f\in A$, $t\in[0,1]$) and
+  have uniformly decaying modulus: for every $\varepsilon>0$ there is $\delta\in(0,1)$ with
+  $w'_f(\delta)<\varepsilon$ for all $f\in A$.  Then $A$ is totally bounded (an explicit
+  finite net of rational step functions is constructed), and hence, by completeness,
+  $\overline{A}$ is compact.  Only the sufficiency direction of Billingsley's
+  Theorem~12.3 is formalized; it is the direction consumed by tightness.
+\end{theorem}
+
+\begin{definition}[The sup-norm on $D$]\label{def:sk-supnorm}
+  \lean{SkorokhodBasic.supNorm, SkorokhodBasic.dist_supNorm_le, SkorokhodBasic.measurable_supNorm}
+  \leanok
+  \uses{def:sk-space, def:sk-dcirc, thm:sk-metric}
+  $\operatorname{supNorm} f$ is the supremum of $|f(t)|$ over $t\in[0,1]$ (defined as
+  $\operatorname{supDiff}(f,0)$).  It is $1$-Lipschitz for $d^\circ$
+  ($|\operatorname{supNorm} f-\operatorname{supNorm} g|\le d^\circ(f,g)$, because a time
+  change permutes the values on $[0,1]$), hence continuous and Borel measurable.  This is
+  the functional through which uniform boundedness enters the tightness criteria.
+\end{definition}
+
+\begin{theorem}[Tightness bridge]\label{thm:sk-tight-bridge}
+  \lean{SkorokhodBasic.isTightMeasureSet_of_bdd_of_modulus}
+  \leanok
+  \uses{thm:sk-compact, def:sk-supnorm, def:sk-modulus}
+  Let $S$ be a set of measures on $D$ such that (i) for every $\eta>0$ there is $a$ with
+  $\mu\{f: a\le\operatorname{supNorm} f\}\le\eta$ for all $\mu\in S$, and (ii) for all
+  $\varepsilon>0$ and $\eta>0$ there is $\delta\in(0,1)$ with
+  $\mu\{f:\varepsilon\le w'_f(\delta)\}\le\eta$ for all $\mu\in S$.  Then $S$ is tight
+  (\texttt{IsTightMeasureSet}), with compact sets supplied by
+  Theorem~\ref{thm:sk-compact}.  Notably, no measurability of the sup-norm or modulus
+  level sets is used --- only monotonicity and countable subadditivity of measures --- so
+  downstream applications may bound the (outer) mass of the modulus level sets by that of
+  any measurable superset.
+\end{theorem}
+
+\section{Measurability: evaluations and the cylinder $\sigma$-algebra}
+
+\begin{theorem}[Evaluations are Borel; Borel $=$ cylinder]\label{thm:sk-eval}
+  \lean{SkorokhodBasic.measurable_eval, SkorokhodBasic.measurableEmbedding_evalRat, SkorokhodBasic.measurable_iff_forall_eval}
+  \leanok
+  \uses{thm:sk-metric, thm:sk-polish, def:sk-supnorm, lem:sk-modulus-decay}
+  Every coordinate evaluation $f\mapsto f(t)$ is Borel measurable on $D$, although it is
+  continuous only at paths continuous at $t$: the proof exhibits $f(t)$ as the pointwise
+  limit of the integral averages $\operatorname{intAvg}_n(t,f)=(n{+}1)\int_t^{t+1/(n+1)}f$,
+  which are $d^\circ$-continuous by dominated convergence along Skorokhod time changes.
+  Consequently the rational-coordinate map $\operatorname{evalRat}\colon D\to(\mathbb{Q}\to\mathbb{R})$
+  is an injective measurable map between standard Borel spaces, hence a measurable
+  embedding: the Borel $\sigma$-algebra of $D$ coincides with the cylinder
+  $\sigma$-algebra.  The bridge lemma follows: $X\colon\Omega\to D$ is measurable iff every
+  coordinate $\omega\mapsto X(\omega)(t)$ is measurable, and laws on $D$ are determined by
+  their rational finite-dimensional distributions (\texttt{ext\_of\_map\_evalRat}).
+  (The modulus $f\mapsto w'_f(\delta)$ itself is \emph{not} proved measurable --- the
+  intended statement survives only inside a comment block --- and, by design, nothing
+  below needs it.)
+\end{theorem}
+
+\begin{theorem}[Crossing times are stopping times]\label{thm:sk-crossseq}
+  \lean{SkorokhodBasic.crossTime, SkorokhodBasic.crossSeq, SkorokhodBasic.isStoppingTime_crossTime, SkorokhodBasic.isStoppingTime_crossSeq}
+  \leanok
+  \uses{def:sk-space, thm:sk-eval}
+  For a process $X$ and $s,\varepsilon$, $\operatorname{crossTime}(X,s,\varepsilon)$ is the
+  first time $t>s$ with $|X_t-X_s|>\varepsilon$, valued in $\mathbb{R}\cup\{\top\}$ ($\top$
+  if no crossing occurs); for a right-continuous adapted process it is a stopping time of
+  the right-continuous augmentation $\mathcal{F}^+$ of the filtration.  The iterated
+  crossing sequence of a path $f\in D$ is $\operatorname{crossSeq}(\varepsilon,f)_0=0$ and
+  $\operatorname{crossSeq}(\varepsilon,f)_{k+1}=\min(\operatorname{crossTime}(\dots)\!\downharpoonright_1,1)$,
+  clamped to $[0,1]$ and set to $1$ when no further crossing exists.  For a measurable
+  $D$-valued random element adapted to a right-continuous filtration
+  ($\mathcal{F}^+=\mathcal{F}$), every $\operatorname{crossSeq}$ iterate is an
+  $\mathcal{F}$-stopping time; this is the supply of stopping times fed into Aldous's
+  criterion.
+\end{theorem}
+
+\section{Aldous's criterion}
+
+\begin{definition}[Aldous's quantity $\alpha(d,e)$]\label{def:sk-aldousq}
+  \lean{SkorokhodBasic.aldousQ}
+  \leanok
+  $\operatorname{aldousQ}(P,X,\mathcal{F},d,e)$ is the supremum, over real-valued
+  $\mathcal{F}$-stopping times $\tau\le 1$ and deterministic shifts $0\le\delta\le d$, of
+  $P\{\,e\le|X_{\min(\tau+\delta,1)}-X_\tau|\,\}$, valued in $[0,\infty]$.  Note the
+  truncation: the shifted time is $\min(\tau+\delta,1)$, so the increment never looks past
+  the horizon (for \texttt{Skoro}-valued processes this is consistent with the flat-right
+  encoding).  The quantity is monotone in the shift budget $d$, and any single admissible
+  pair $(\tau,\delta)$ bounds it from below
+  (\texttt{le\_aldousQ\_of\_stoppingTime}).
+\end{definition}
+
+\begin{theorem}[Aldous's tightness criterion]\label{thm:sk-aldous}
+  \lean{SkorokhodBasic.aldous_tightness}
+  \leanok
+  \uses{def:sk-aldousq, thm:sk-tight-bridge, thm:sk-crossseq, def:sk-supnorm, def:sk-modulus, thm:sk-eval}
+  Let $(X_i)_{i\in\iota}$ be $D$-valued measurable random elements on probability spaces
+  $(\Omega_i,P_i)$, each adapted to a right-continuous filtration $\mathcal{F}_i$.  Assume
+  (i) uniform sup-norm tightness: for every $\eta>0$ there is $a$ with
+  $P_i\{a\le\operatorname{supNorm}X_i\}\le\eta$ for all $i$; and (ii) the Aldous
+  condition: for all $\varepsilon,\eta>0$ there is $\delta>0$ with
+  $\alpha_i(\delta,\varepsilon)\le\eta$ uniformly in $i$.  Then the family of laws
+  $\{(P_i)_*X_i\}$ is tight on $D$.  The proof is Aldous's genuine two-scale argument
+  (Billingsley (16.24)ff): the measurable witness superset for the modulus level sets is
+  an interior bad set of close consecutive crossings plus a boundary shift-average
+  detector, whose masses are controlled by $\alpha$ at two scales via a raw interval
+  Lebesgue average over the shift; a single-scale variant was refuted by counterexample
+  during formalization.
+\end{theorem}
+
+\begin{theorem}[Aldous via second moments]\label{thm:sk-aldous-moment}
+  \lean{SkorokhodBasic.aldous_of_moment}
+  \leanok
+  \uses{thm:sk-aldous, def:sk-aldousq, def:sk-supnorm}
+  Second-moment form of the criterion: if, uniformly over the family, over stopping times
+  $\tau\le 1$ and shifts $0\le\delta\le d$, the truncated increments satisfy
+  $\mathbb{E}\bigl[(X_{\min(\tau+\delta,1)}-X_\tau)^2\bigr]\le M(d)$ with
+  $M(d)\to 0$ as $d\to 0^+$ (plus a.e.-measurability of the increments and the uniform
+  sup-norm bound), then the laws are tight on $D$.  It combines Chebyshev's inequality
+  inside the Aldous supremum (\texttt{aldousQ\_le\_of\_second\_moment}) with
+  Theorem~\ref{thm:sk-aldous}.
+\end{theorem}
+
+% ---------------------------------------------------------------------------
+% Blueprint fragment: the Mitoma campaign
+% Files covered (all sorry-free):
+%   TypeDDecouplingSchwartzFrechet.lean, TypeDDecouplingSchwartzDual.lean,
+%   TypeDDecouplingHermite.lean, TypeDDecouplingHermiteSobolev.lean,
+%   TypeDDecouplingMitomaCore.lean
+% ---------------------------------------------------------------------------
+
+\chapter{Nuclear structure of $\mathcal{S}(\mathbb{R})$ and Mitoma's criterion}
+
+\section{The Fréchet package for $\mathcal{S}(\mathbb{R})$}
+
+\begin{theorem}[Schwartz space is a complete, Baire, barrelled space]\label{thm:mit-frechet-instances}
+  \lean{SchwartzMap.instIsCountablyGeneratedUniformity, SchwartzMap.instCompleteSpace, SchwartzMap.instBaireSpace, SchwartzMap.instBarrelledSpace}
+  \leanok
+  For real normed spaces $E$, $F$, the uniformity of Mathlib's canonical Schwartz space
+  $\mathcal{S}(E,F)$ is countably generated, coming from the $\mathbb{N}\times\mathbb{N}$-indexed
+  seminorm family $p_{k,n}(\varphi) = \sup_x \|x\|^k \|D^n\varphi(x)\|$.  When $F$ is complete,
+  $\mathcal{S}(E,F)$ is a complete space for this uniformity: the analytic heart is that a
+  sequence of $C^\infty$ functions converging pointwise, with all iterated derivatives converging
+  uniformly, has a $C^\infty$ limit whose iterated derivatives are those uniform limits.
+  Via Mathlib's metrization of countably generated uniformities, the Baire and barrelled-space
+  instances follow, all attached to the canonical topology with no re-metrization.
+\end{theorem}
+
+\begin{theorem}[Banach--Steinhaus corollaries for tempered functionals]\label{thm:mit-banach-steinhaus}
+  \lean{SchwartzMap.exists_continuous_seminorm_of_pointwise_bounded, SchwartzMap.continuous_iSup_abs}
+  \leanok
+  \uses{thm:mit-frechet-instances}
+  If a family $(\mathcal{F}_i)_{i \in \iota}$ of continuous linear functionals on
+  $\mathcal{S}(\mathbb{R},\mathbb{R})$ is pointwise bounded (for each $\varphi$ there is $C$ with
+  $|\mathcal{F}_i \varphi| \le C$ for all $i$), then there is a single \emph{continuous} seminorm
+  $q$ with $|\mathcal{F}_i \varphi| \le q(\varphi)$ for all $i$ and $\varphi$.  This is
+  Banach--Steinhaus in dominating-seminorm form, available because $\mathcal{S}$ is barrelled.
+  As a companion, a countable pointwise supremum $\varphi \mapsto \sup_i |\mathcal{F}_i \varphi|$
+  whose seminorm family is bounded above is itself continuous.
+\end{theorem}
+
+\section{Separability and the countable dense set}
+
+\begin{theorem}[Separability and second countability of $\mathcal{S}(\mathbb{R},\mathbb{R})$]\label{thm:mit-separable}
+  \lean{SchwartzMap.secondCountableTopology_onePoint_real, SchwartzMap.separableSpace_zeroAtInfty, SchwartzMap.weightedDerivLM, SchwartzMap.isInducing_weightedDerivLM, SchwartzMap.instSeparableSpace, SchwartzMap.instSecondCountableTopology}
+  \leanok
+  \uses{thm:mit-frechet-instances}
+  The weighted-derivative maps $\varphi \mapsto (x \mapsto |x|^k \, \varphi^{(n)}(x))$ land in
+  $C_0(\mathbb{R},\mathbb{R})$ by Schwartz decay, realize the Schwartz seminorms as sup-norms, and
+  jointly give a linear topological embedding of $\mathcal{S}(\mathbb{R},\mathbb{R})$ into the
+  countable product $\prod_{(k,n)} C_0(\mathbb{R},\mathbb{R})$.  The space
+  $C_0(\mathbb{R},\mathbb{R})$ is separable (via an isometric embedding into
+  $C(\mathbb{R}^+,\mathbb{R})$ on the one-point compactification, which is second countable), so the
+  product is second countable and second countability transfers back along the embedding.  Combined
+  with the countably generated uniformity, $\mathcal{S}(\mathbb{R},\mathbb{R})$ is separable and
+  second countable on its canonical topology.
+\end{theorem}
+
+\begin{definition}[The countable dense set and countable reduction]\label{def:mit-dense-set}
+  \lean{SchwartzMap.denseSet, SchwartzMap.denseSet_countable, SchwartzMap.denseSet_dense, SchwartzMap.forall_le_of_forall_dense}
+  \leanok
+  \uses{thm:mit-separable}
+  A \emph{named} countable dense subset $\mathcal{D} \subseteq \mathcal{S}(\mathbb{R},\mathbb{R})$,
+  chosen once from separability, together with the countable-reduction principle: for a continuous
+  linear functional $F$ and a \emph{continuous} seminorm $q$, the bound $|F\varphi| \le q(\varphi)$
+  on any dense set of $\varphi$ already implies it for every $\varphi$, since the bound cuts out a
+  closed set.  This is the measurability hook used downstream.
+\end{definition}
+
+\section{The pointwise dual and compact polar balls}
+
+\begin{definition}[The pointwise dual and polar balls]\label{def:mit-polar-ball}
+  \lean{SchwartzMap.SchDual, SchwartzMap.polarBall, SchwartzMap.mem_polarBall}
+  \leanok
+  The dual $\mathrm{SchDual}$ is the space of continuous linear functionals
+  $\mathcal{S}(\mathbb{R},\mathbb{R}) \to \mathbb{R}$ carrying Mathlib's topology of pointwise
+  (weak-$*$) convergence (\texttt{PointwiseConvergenceCLM}).  For a seminorm $q$ on $\mathcal{S}(\mathbb{R},\mathbb{R})$, the polar
+  ball is $\mathrm{polarBall}(q) = \{F \in \mathrm{SchDual} \mid \forall \varphi,\ |F\varphi| \le
+  q(\varphi)\}$; it contains $0$ and is monotone in $q$.
+\end{definition}
+
+\begin{theorem}[Compactness of polar balls]\label{thm:mit-polar-compact}
+  \lean{SchwartzMap.isCompact_polarBall}
+  \leanok
+  \uses{def:mit-polar-ball}
+  For a \emph{continuous} seminorm $q$, the polar ball $\mathrm{polarBall}(q)$ is compact in the
+  pointwise topology.  The proof pushes through the embedding of $\mathrm{SchDual}$ into the product
+  space $\mathcal{S}(\mathbb{R},\mathbb{R}) \to \mathbb{R}$: the image is the intersection of the
+  closed coordinatewise linearity conditions with the pointwise bound, inside the Tychonoff-compact
+  box $\prod_\varphi [-q(\varphi), q(\varphi)]$, and a pointwise limit obeying the bound is
+  automatically continuous because it is dominated by the continuous seminorm $q$.  No Ascoli-type
+  argument is needed.
+\end{theorem}
+
+\begin{proposition}[The rational cofinal family of polar balls]\label{prop:mit-rat-cofinal}
+  \lean{SchwartzMap.ratSeminorm, SchwartzMap.continuous_ratSeminorm, SchwartzMap.pointwiseBounded_subset_compact_polarBall}
+  \leanok
+  \uses{thm:mit-banach-steinhaus, def:mit-polar-ball, thm:mit-polar-compact}
+  The special seminorms $\mathrm{ratSeminorm}(c, s) = c \cdot \sup_{(k,n) \in s} p_{k,n}$, indexed
+  by $c \in \mathbb{R}_{\ge 0}$ and finite sets $s \subseteq \mathbb{N} \times \mathbb{N}$, are
+  continuous, and their polar balls form a cofinal family: every pointwise-bounded family
+  $(\mathcal{F}_i)$ in the dual is contained in a single compact polar ball
+  $\mathrm{polarBall}(\mathrm{ratSeminorm}(c,s))$.  This combines the Banach--Steinhaus
+  dominating-seminorm corollary with the characterization of continuous seminorms on a space with
+  seminorms.
+\end{proposition}
+
+\begin{proposition}[Polar-ball membership is countably checkable]\label{prop:mit-polar-dense-check}
+  \lean{SchwartzMap.mem_polarBall_iff_dense, SchwartzMap.mem_polarBall_iff_denseSet}
+  \leanok
+  \uses{def:mit-polar-ball, def:mit-dense-set}
+  For a continuous seminorm $q$ and a dense set $D$, membership $F \in \mathrm{polarBall}(q)$ is
+  equivalent to the bound $|F\varphi| \le q(\varphi)$ holding for $\varphi \in D$ only.
+  Specialized to the named countable dense set $\mathcal{D}$, the confinement event becomes a
+  countable intersection of evaluation events, which is the measurability input for the
+  probabilistic core.
+\end{proposition}
+
+\section{Hermite functions and the Hilbert basis of $L^2(\mathbb{R})$}
+
+\begin{definition}[The Hermite functions and their orthonormality]\label{def:mit-hermite-fun}
+  \lean{TypeDDecouplingHermite.hermiteFun, TypeDDecouplingHermite.hermiteC, TypeDDecouplingHermite.hermiteSchwartz, TypeDDecouplingHermite.hermite_orthogonality, TypeDDecouplingHermite.hermiteFun_orthonormal_integral}
+  \leanok
+  The Hermite functions are $h_n(x) = c_n H_n(x)\, e^{-x^2/4}$, where $H_n$ is the probabilists'
+  Hermite polynomial (Mathlib's \texttt{Polynomial.hermite}, monic, orthogonal for the weight
+  $e^{-x^2/2}$) and $c_n = \bigl(\sqrt{n!\,\sqrt{2\pi}}\bigr)^{-1}$ is derived so that the family is
+  $L^2$-normalized for \emph{Lebesgue} measure.  The orthogonality relation
+  $\int H_m H_n e^{-x^2/2}\,dx = \delta_{mn}\, n!\,\sqrt{2\pi}$ is proved by induction from a
+  Rodrigues-type recurrence, and yields $\int h_m h_n\,dx = \delta_{mn}$.  Each $h_n$ is bundled as
+  a Schwartz function (polynomial times Gaussian decay).
+\end{definition}
+
+\begin{theorem}[Completeness: the Hermite Hilbert basis of $L^2(\mathbb{R})$]\label{thm:mit-hermite-basis}
+  \lean{TypeDDecouplingHermite.hermite_complete, TypeDDecouplingHermite.hermiteBasis}
+  \leanok
+  \uses{def:mit-hermite-fun}
+  Any $f \in L^2(\mathbb{R})$ with $\langle h_n, f\rangle = 0$ for all $n$ is zero.  The analytic
+  heart is Fourier-based: orthogonality to all $h_n$ kills all moments of $g = f \cdot e^{-x^2/4}$,
+  hence (by dominated expansion of the Fourier kernel into its power series) $\widehat{g} \equiv 0$,
+  and $L^1$-Fourier injectivity gives $g = 0$ a.e.  Together with orthonormality this packages the
+  Hermite functions as a \texttt{HilbertBasis} $\mathbb{N} \to L^2(\mathbb{R})$, with the usual
+  Fourier--Hermite expansion and Parseval identity.
+\end{theorem}
+
+\section{The Hermite--Sobolev chain}
+
+\begin{definition}[The harmonic oscillator: self-adjointness and eigenrelation]\label{def:mit-oscillator}
+  \lean{TypeDDecouplingHermiteSobolev.oscCLM, TypeDDecouplingHermiteSobolev.oscCLM_self_adjoint, TypeDDecouplingHermiteSobolev.oscCLM_hermiteSchwartz}
+  \leanok
+  \uses{def:mit-hermite-fun}
+  The harmonic oscillator $A f = -f'' + (x^2/4 + 1/2)\,f$ is a continuous linear map
+  $\mathcal{S}(\mathbb{R},\mathbb{R}) \to \mathcal{S}(\mathbb{R},\mathbb{R})$, built from Mathlib's
+  Laplacian CLM and multiplication by the temperate-growth multiplier $x^2/4 + 1/2$.  It is
+  symmetric for the $L^2$ pairing, $\int (Af)\,g = \int f\,(Ag)$, and the Hermite functions are its
+  eigenfunctions: $A h_n = (n+1)\, h_n$, proved from the ladder identities for $h_n$.
+\end{definition}
+
+\begin{definition}[Hermite--Sobolev seminorms]\label{def:mit-sobolev-seminorm}
+  \lean{TypeDDecouplingHermite.hermiteCoeffCLM, TypeDDecouplingHermiteSobolev.sobolevNormSq, TypeDDecouplingHermiteSobolev.sobolevSeminorm, TypeDDecouplingMitomaCore.sobolevSeminormB}
+  \leanok
+  \uses{def:mit-hermite-fun, thm:mit-hermite-basis, def:mit-oscillator}
+  The $n$-th Hermite coefficient $\varphi \mapsto \int h_n \varphi$ is a continuous linear
+  functional on $\mathcal{S}(\mathbb{R},\mathbb{R})$, and the level-$r$ Hermite--Sobolev seminorm is
+  $\|\varphi\|_r = \bigl(\sum_n (n+1)^{2r} \langle h_n, \varphi\rangle^2\bigr)^{1/2}$; the defining
+  series is summable because coefficient decay $|\langle h_n, \varphi\rangle| \lesssim (n+1)^{-r}$
+  at every order follows from powers of the oscillator via the eigenrelation and self-adjointness.
+  The same quantity is packaged as a bundled \texttt{Seminorm} by factoring through the weighted
+  coefficient map into $\ell^2$.
+\end{definition}
+
+\begin{theorem}[Two-sided domination: the chain generates the Schwartz topology]\label{thm:mit-sobolev-equiv}
+  \lean{TypeDDecouplingHermiteSobolev.sobolev_continuous, TypeDDecouplingHermiteSobolev.seminorm_le_sobolev}
+  \leanok
+  \uses{def:mit-sobolev-seminorm, def:mit-oscillator}
+  Each Hermite--Sobolev seminorm is continuous for the canonical Schwartz topology: for every $r$
+  there are $C \ge 0$ and a finite set $s$ of indices with
+  $\|\varphi\|_r \le C \cdot \sup_{(k,n) \in s} p_{k,n}(\varphi)$.  Conversely, every canonical
+  Schwartz seminorm is dominated by a single Hermite--Sobolev level:
+  $p_{k,m}(\varphi) \le C\, \|\varphi\|_r$ for some $C \ge 0$ and $r$ (obtained by trading powers of
+  $x$ and derivatives against oscillator powers).  Hence the countable Hilbertian chain
+  $(\|\cdot\|_r)_{r \in \mathbb{N}}$ generates the Schwartz topology.
+\end{theorem}
+
+\begin{lemma}[Hilbert--Schmidt summability of the chain]\label{lem:mit-hs-summable}
+  \lean{TypeDDecouplingHermiteSobolev.hermiteSobolevVec, TypeDDecouplingHermiteSobolev.hermiteSobolev_hs_summable}
+  \leanok
+  \uses{def:mit-hermite-fun, def:mit-sobolev-seminorm}
+  The vectors $e^r_j = (j+1)^{-r}\, h_j$ form the $\|\cdot\|_r$-orthonormal system, and
+  $\|e^r_j\|_q = (j+1)^{q-r}$.  Whenever $q + 1 \le r$, the squares are summable:
+  $\sum_j \|e^r_j\|_q^2 = \sum_j (j+1)^{2(q-r)} < \infty$.  This is the nuclearity input (the
+  inclusion between consecutive levels of the chain is Hilbert--Schmidt) consumed by the
+  Gaussian-averaging step of Mitoma's argument.
+\end{lemma}
+
+\section{The probabilistic core: Mitoma confinement}
+
+\begin{lemma}[Xia's lemma]\label{lem:mit-xia}
+  \lean{TypeDDecouplingMitomaCore.xia_lemma}
+  \leanok
+  \uses{thm:mit-frechet-instances}
+  Let $M : \mathcal{S}(\mathbb{R},\mathbb{R}) \to \mathbb{R}$ be nonnegative, even, subadditive and
+  lower semicontinuous, with $M(n^{-1}\varphi) \to 0$ as $n \to \infty$ for every fixed $\varphi$.
+  Then $M$ is continuous at $0$.  The proof is a Baire-category argument on the Fréchet space
+  $\mathcal{S}$: the closed sets $\{\varphi \mid \forall m \ge k,\ M(m^{-1}\varphi) \le \varepsilon\}$
+  cover the space, so one has nonempty interior, and subadditivity converts this into a
+  neighborhood of $0$ on which $M$ is small.
+\end{lemma}
+
+\begin{theorem}[Characteristic-functional bound]\label{thm:mit-charfun-bound}
+  \lean{TypeDDecouplingMitomaCore.charFunctional_bound}
+  \leanok
+  \uses{lem:mit-xia, def:mit-polar-ball, def:mit-sobolev-seminorm, thm:mit-sobolev-equiv}
+  Setting: a countable nonempty time set $T$, probability spaces $(\Omega_i, P_i)_{i \in \iota}$,
+  and measurable dual-valued processes $Z_i : T \to \Omega_i \to \mathrm{SchDual}$, under hypothesis
+  (H): for every test function $\varphi$ and $\varepsilon > 0$ there is $a > 0$ with
+  $P_i\{\omega \mid \exists t,\ a < |Z_i(t,\omega)\varphi|\} \le \varepsilon$ \emph{uniformly in}
+  $i$.  Then for every $\varepsilon > 0$ there are $q \in \mathbb{N}$ and $\delta > 0$ such that
+  $\sup_i \int \sup_t \bigl\|1 - e^{i\, Z_i(t,\omega)\varphi}\bigr\|\, dP_i(\omega) \le
+  \varepsilon + 2\,\|\varphi\|_q^2/\delta^2$ for all $\varphi$.  The proof applies Xia's lemma to
+  the functional $M(\varphi) = \sup_i \int \sup_t \frac{|Z\varphi|}{1+|Z\varphi|}\,dP_i$ and
+  converts the resulting Schwartz neighborhood into a Hermite--Sobolev ball via the two-sided
+  domination.
+\end{theorem}
+
+\begin{theorem}[Gaussian-averaging bound]\label{thm:mit-gaussian-bound}
+  \lean{TypeDDecouplingMitomaCore.gaussian_confinement_bound}
+  \leanok
+  \uses{thm:mit-charfun-bound, lem:mit-hs-summable}
+  Under the same measurability hypothesis and hypothesis (H): for every $\varepsilon > 0$ there are
+  $q$ and $\delta > 0$ such that for all $C > 0$ and all $i$,
+  $P_i\bigl\{\omega \,\big|\, \exists t\, \exists N,\ C^2 < \sum_{j < N}
+  \langle Z_i(t,\omega), e^{q+1}_j\rangle^2 \bigr\}
+  \le \kappa \bigl(\varepsilon + \tfrac{2}{\delta^2} \cdot \tfrac{S_{q,q+1}}{C^2}\bigr)$,
+  where $\kappa = \sqrt{e}/(\sqrt{e}-1)$ is the Badrikian constant and
+  $S_{q,q+1} = \sum_j \|e^{q+1}_j\|_q^2$ is the (finite) Hilbert--Schmidt constant.  The proof
+  averages the characteristic-functional bound over finite-dimensional Gaussian test functions
+  $\varphi_y = \sum_{j<N} y_j e^{q+1}_j$ with $y \sim \mathcal{N}(0, C^{-2})^{\otimes N}$ and uses a
+  Badrikian-type indicator estimate.
+\end{theorem}
+
+\begin{theorem}[Mitoma confinement]\label{thm:mit-confinement}
+  \lean{TypeDDecouplingMitomaCore.mitoma_confinement}
+  \leanok
+  \uses{thm:mit-gaussian-bound, thm:mit-charfun-bound, lem:mit-xia, thm:mit-polar-compact, lem:mit-hs-summable}
+  Under the measurability hypothesis and the per-test-function uniform sup-tightness hypothesis
+  (H), for every $\eta > 0$ there are $q \in \mathbb{N}$ and $B > 0$ such that the polar ball
+  $K = \mathrm{polarBall}\bigl(B \cdot \|\cdot\|_{q+1}\bigr)$ is \emph{compact} in the pointwise
+  dual, and for every $i$,
+  $P_i\bigl\{\omega \,\big|\, \exists t \in T,\ Z_i(t,\omega) \notin K\bigr\} \le \eta$.
+  That is, the processes stay in one fixed compact dual ball, uniformly over the countable time set
+  and uniformly in $i$, with probability at least $1-\eta$.  The proof chooses $C$ large in the
+  Gaussian-averaging bound and identifies bounded coefficient partial sums with polar-ball
+  membership.  This is the uniform dual-ball confinement at the heart of Mitoma's tightness
+  criterion for $\mathcal{S}'$-valued processes.
+\end{theorem}

@@ -1,0 +1,125 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\dd}{\,\mathrm d}
+
+\title{Formalization brief: L\'evy's continuity theorem on $\R$\\
+(discharging the \texttt{LevyContinuity$\R$} hypothesis)}
+\date{5 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} A new self-contained file (suggest
+\texttt{TypeDDecouplingLevy.lean}) proving the proposition
+\texttt{LevyContinuity}$\R$ \underline{as defined in}
+\texttt{TypeDDecouplingMartingaleCLT.lean} (attached):
+\[
+  \forall\,(\xi:\mathbb N\to\mathcal P(\R))\,(\nu:\mathcal P(\R)):\quad
+  \Big(\forall t,\ \widehat{\xi_n}(t)\to\widehat\nu(t)\Big)
+  \ \Longrightarrow\ \xi_n\to\nu\ \text{weakly},
+\]
+where $\widehat\mu=\mathrm{charFun}\,\mu$. Note this is the \underline{identified-limit}
+form: the limit measure $\nu$ is GIVEN and the limit function is $\widehat\nu$ ---
+no construction of the limit from a function continuous at $0$ is required.
+Do not modify \texttt{TypeDDecouplingMartingaleCLT.lean}; add a corollary
+\texttt{mcleish\_clt\_unconditional} in the NEW file that discharges the
+\texttt{hLevy} hypothesis of \texttt{mcleish\_clt} with the proved instance.
+Whole project must build; standard axioms only.
+
+\section*{Tier 1: the truncation inequality (self-contained Fubini)}
+
+\begin{lemma}[charFun truncation bound]\label{lem:trunc}
+For a probability measure $\mu$ on $\R$ and $\delta>0$,
+\[
+  \mu\big(\{x:|x|\ge 2/\delta\}\big)\ \le\
+  \frac1\delta\int_{-\delta}^{\delta}
+  \big(1-\mathrm{Re}\,\widehat\mu(t)\big)\dd t .
+\]
+\end{lemma}
+
+\noindent Route: Fubini on
+$\frac1{2\delta}\int_{-\delta}^\delta(1-\cos(tx))\dd t
+=1-\frac{\sin(\delta x)}{\delta x}$, and the elementary bound
+$1-\frac{\sin y}{y}\ge1-\frac1{|y|}\ge\frac12$ for $|y|\ge2$ (with
+$1-\sin y/y\ge0$ for all $y$). All integrands are bounded and jointly
+measurable; the inner integral is over a compact interval. (If Mathlib
+already contains this or an equivalent --- search for it first --- reuse it.)
+
+\section*{Tier 2: tightness from pointwise charFun convergence}
+
+\begin{lemma}[tightness]\label{lem:tight}
+If $\widehat{\xi_n}(t)\to\widehat\nu(t)$ for every $t$, then the family
+$\{\xi_n\}$ is tight: for every $\eps>0$ there is $K$ with
+$\sup_n\xi_n(\{|x|>K\})\le\eps$.
+\end{lemma}
+
+\noindent Route: $\widehat\nu$ is continuous (dominated convergence) with
+$\widehat\nu(0)=1$, so choose $\delta$ with
+$\frac1\delta\int_{-\delta}^\delta(1-\mathrm{Re}\,\widehat\nu)\le\eps/2$;
+by dominated convergence on $[-\delta,\delta]$ (integrands bounded by $2$)
+the corresponding $\xi_n$-integrals converge, so they are $\le\eps$ for
+$n\ge N$; Lemma~\ref{lem:trunc} bounds the tails for $n\ge N$, and the finitely
+many $\xi_0,\dots,\xi_{N-1}$ are individually tight.
+
+\section*{Tier 3: assembly}
+
+\begin{theorem}\label{thm:levy}
+\texttt{LevyContinuity}$\R$ holds.
+\end{theorem}
+
+\noindent Route (sub-subsequence principle in the metrizable space
+$\mathcal P(\R)$ with the L\'evy--Prokhorov/weak topology):
+\begin{itemize}
+\item[(i)] By Lemma~\ref{lem:tight} the sequence is tight; by
+\underline{Prokhorov's theorem} every subsequence has a further weakly convergent
+subsequence $\xi_{n_k}\to\rho$. Mathlib is expected to contain a usable form
+(the L\'evy--Prokhorov metrization and tightness--compactness development;
+search \texttt{IsTightMeasureSet}, \texttt{LevyProkhorov},
+relative-compactness lemmas). \underline{Sanctioned fallback}: if Prokhorov in a
+usable form is genuinely absent from the pinned Mathlib, take EXACTLY this
+step as a single named hypothesis (\texttt{ProkhorovSeq}$\R$: every tight
+sequence in $\mathcal P(\R)$ has a weakly convergent subsequence), prove
+everything else, and provide \texttt{levyContinuity\_of\_prokhorov :
+ProkhorovSeq}$\R\to$\texttt{LevyContinuity}$\R$ --- still a strict reduction.
+\item[(ii)] Weak convergence integrates bounded continuous functions, so
+$\widehat\rho=\lim\widehat{\xi_{n_k}}=\widehat\nu$ pointwise ($x\mapsto
+e^{\mathrm itx}$ bounded continuous, real and imaginary parts separately if
+needed); charFun extensionality (in Mathlib:
+\texttt{Measure.ext\_of\_charFun} or equivalent --- the charFun API used by
+the attached file) gives $\rho=\nu$.
+\item[(iii)] Every subsequence thus has a further subsequence converging to
+the SAME limit $\nu$; in the metrizable topology of $\mathcal P(\R)$ this
+forces $\xi_n\to\nu$ (Mathlib: \texttt{tendsto\_of\_subseq\_tendsto} or the
+corresponding filter lemma).
+\end{itemize}
+
+\medskip\noindent\textbf{Corollary (must be included).}
+\texttt{mcleish\_clt\_unconditional}: the statement of \texttt{mcleish\_clt}
+with the \texttt{hLevy} argument removed, proved by applying
+\texttt{mcleish\_clt} to Theorem~\ref{thm:levy} (or, under the fallback, the
+conditional variant taking \texttt{ProkhorovSeq}$\R$). A docstring in the new
+file should record which of the two outcomes was achieved.
+
+\begin{remark}[interface and fallbacks]
+(1) Search Mathlib FIRST for each ingredient (truncation inequality, tightness
+lemmas, Prokhorov, charFun ext, sub-subsequence criterion) and reuse anything
+present --- this brief describes the mathematics, not a mandate to re-prove
+existing library results.
+(2) The only sanctioned named hypothesis is \texttt{ProkhorovSeq}$\R$ in the
+event Prokhorov is absent; tightness, the truncation bound, and the
+identification step must be proved outright.
+(3) Real--vs--complex bookkeeping: $1-\mathrm{Re}\,\widehat\mu(t)\ge0$
+throughout; integrals may be taken of the real part only.
+(4) This result is of library-wide interest; keep the file free of
+project-specific imports beyond what the charFun API needs, so it could be
+upstreamed to Mathlib later.
+\end{remark}
+
+\end{document}

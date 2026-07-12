@@ -1,0 +1,11 @@
+.lake/
+blueprint/web/
+blueprint/print/
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.paux
+.DS_Store

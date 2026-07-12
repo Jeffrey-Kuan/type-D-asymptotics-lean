@@ -1,0 +1,102 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\Z}{\mathbb{Z}}\newcommand{\E}{\mathbb{E}}
+\newcommand{\eps}{\varepsilon}\newcommand{\vp}{\varpi}
+
+\title{Formalization brief: \texttt{prop:conc} ($L^2$ concentration of the cross bracket)}
+\date{4 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry} at \texttt{prop\_conc} in
+\texttt{TypeDDecouplingEW.lean} by proving its quantitative content sorry-free,
+following the established assembly pattern (\texttt{prop\_drift}): the process-level
+facts enter as named hypotheses; the inequality chain and the time integration are
+proved. Suggest a new file \texttt{TypeDDecouplingConc.lean} for the abstract
+estimate, with the concrete wiring in the EW file. Do not weaken
+\texttt{thm\_ewmain}'s wiring; whole project must build; standard axioms only.
+
+\section*{The abstract concentration estimate}
+
+Inputs (hypotheses of the abstract theorem; all instantiations exist in the
+project or are standard process facts):
+\begin{itemize}
+\item a correlation kernel $G:\ (\text{bond }z,\ \text{time }u)\mapsto G(z,u)\ge0$
+  and a constant $M\ge1$ with the \underline{transfer bound}
+  $|\E_\nu[V_x(\eta_0)V_y(\eta_u)]|\le M\,G(x,u)^{1/2}G(y,u)^{1/2}$
+  (instantiated by \texttt{lem\_sector\_transfer} $+$ Cauchy--Schwarz);
+\item the \underline{kernel split}: $G(z,u)\le
+  C_k\big[(1+u)^{-1}+e^{-\nu u}(1+u)^{-1/2}\big]+\eps_\ast$ for constants
+  $C_k,\nu>0$ and $\eps_\ast\ge0$ (instantiated by the bond-pair/dressed
+  decomposition: mass-sector invariance of the dual dynamics, the two-particle
+  kernel bound \texttt{thm:kernel} for the sixteen bond-pair terms, the
+  $L^2(\vp)$-contraction of the semigroup plus \texttt{lem\_eps} for the dressed
+  part --- these two facts may be hypotheses at the abstract level);
+\item the \underline{equal-time bound} $|C_\Theta(s)|\le C_e/N$ for all $s$
+  (instantiated by \texttt{lem\_eqvar}, already proved);
+\item the \underline{stationarity identity}
+  $\E_\nu\big[(\int_0^t\Theta\,ds)^2\big]=2\int_0^t(t-s)\,C_\Theta(s)\,ds$
+  (process fact; a named hypothesis).
+\end{itemize}
+Here $\Theta=\frac1N\sum_xg_x V_x$ with $g_x=\varphi'(x/N)^2$,
+$C_\Theta(s)=\E_\nu[\Theta(\eta_0)\Theta(\eta_{sN^2})]$, and
+$\sum_x g_x\le C_\varphi N$ (Riemann-sum hypothesis on the test function).
+
+\begin{lemma}[correlation bound]\label{lem:corrbound}
+Under the transfer bound and kernel split, for $s>0$,
+\[
+  |C_\Theta(s)|\;\le\;\frac{M}{N^2}\Big(\sum_x g_x\,G(x,sN^2)^{1/2}\Big)^{\!2}
+  \;\le\;M\,C_\varphi^2\,\Big[\frac{C_k}{sN^2}
+  +C_k\,e^{-\nu sN^2}\frac{1}{(1+sN^2)^{1/2}}+\eps_\ast\Big]\cdot(1+o)\,,
+\]
+using $(a+b+c)\le3\max$-style crude constants freely; any explicit constant
+depending on $(M,C_k,C_\varphi)$ is acceptable. With the EW instantiation
+$\nu=\nu_{\mathrm{sp}}$, $\nu_{\mathrm{sp}}sN^2\ge 3cs$ for $N$ large, the middle
+term is $\le C\,e^{-3cs}/(N\sqrt s)$.
+\end{lemma}
+
+\begin{lemma}[time integration]\label{lem:timeint}
+For $t>0$, $N\ge1$, combining Lemma~\ref{lem:corrbound} for $s\ge N^{-2}$ with the
+equal-time bound for $s\le N^{-2}$:
+\[
+  \int_0^t|C_\Theta(s)|\,ds\;\le\;
+  C\Big[\frac{1+\log_+(tN^2)}{N^2}+\frac{1}{c^{1/2}N}+t\,\eps_\ast\Big],
+\]
+via the elementary integrals $\int_{N^{-2}}^t\frac{ds}{sN^2}=\frac{\log(tN^2)}{N^2}$,
+$\int_0^\infty\frac{e^{-3cs}}{\sqrt s}\,ds=\sqrt{\pi/3c}$, and
+$\int_0^{N^{-2}}C_e/N\,ds=C_e/N^3$.
+\end{lemma}
+
+\noindent\textbf{Conclusion} (the statement of \texttt{prop:conc}): with the
+stationarity identity,
+\[
+  \E_\nu\Big[\langle M_1^N,M_2^N\rangle(\varphi,t)^2\Big]
+  \;\le\;2t\int_0^t|C_\Theta|\,ds\;\le\;
+  C(\varphi,c)\,t\Big[\frac1N+\frac{\log_+(tN^2)}{N^2}+t\,\eps_N\Big],
+\]
+and with $\eps_N=O(N^{-2})$ from \texttt{lem\_eps} the right side tends to $0$ for
+every fixed $t$, establishing condition (X).
+
+\begin{remark}[instantiation notes]
+(1) The transfer input should come from the proved
+\texttt{lem\_sector\_transfer} (compensated fugacity), with $M$ the explicit
+$e^{2(C_0(\beta_1)+C_0(\beta_2))}$. (2) $\eps_\ast$ instantiates to the proved
+dressed-mass bound $(q^{-4\ell(z)}-1)^2\le C(c,K)N^{-2}$ --- note it is
+$z$-uniform, as required. (3) The bond-pair kernel input may cite
+\texttt{thm:kernel} as already encoded (an assembly over the sorried LCLT leaves);
+do not re-prove it. (4) The mass-sector orthogonality of the split
+$G=G^{(2)}+G^{(\mathrm{dr})}$ (cross terms vanish because the dual dynamics
+preserves particle numbers) may be a named hypothesis if the process-level
+encoding makes a proof awkward; prefer proving it at the finite-matrix level
+(sector-block-diagonal semigroup) if cheap. (5) Constants are free: any explicit
+$C(\varphi,c,K,M)$ matching the displayed shape is acceptable; the paper's
+statement uses exactly the three-term form above.
+\end{remark}
+
+\end{document}

@@ -1,0 +1,98 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\PP}{\mathbb{P}}\newcommand{\R}{\mathbb{R}}
+
+\title{Formalization brief: completing \texttt{prop\_twophase}\\
+(the model reduction to the abstract two--phase mixture CLT)}
+\date{5 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Goal.} Remove the \texttt{sorry}s at \texttt{prop\_twophase}
+and \texttt{prop\_twophase\_mixture} in \texttt{TypeDDecouplingCrossover.lean}
+by proving them from the now-complete CLT chain
+(\texttt{TypeDDecouplingMartingaleCLT.lean},
+\texttt{TypeDDecouplingTwoPhase.lean}, \texttt{TypeDDecouplingLevy.lean} ---
+attached; do NOT modify these three), following the project's established
+assembly convention (\texttt{prop\_drift}'s \texttt{hpin},
+\texttt{prop\_conc}'s \texttt{hproc}): irreducibly process-level facts enter
+as one named, explicitly documented hypothesis bundle; every reduction step
+from that bundle to the conclusion is proved. You MAY modify
+\texttt{TypeDDecouplingCrossover.lean} for this purpose (first task permitted
+to); preserve the statements' mathematical content, keep every downstream
+consumer (\texttt{thm\_cross} etc.) elaborating, whole project must build,
+standard axioms only. If a bridge file helps, use
+\texttt{TypeDDecouplingTwoPhaseBridge.lean}.
+
+\section*{The reduction, mathematically}
+
+The paper's Proposition 7.7: the dual pair $(X_1,X_2)$ run from the bound
+pair, $q=1-c/T$; conditionally on the split-time fraction $\tau/T\to u$ and on
+the no-re-binding event, $(X_1,X_2)(T)/\sqrt{2T}$ converges to the
+correlation-$u$ bivariate normal; averaging over
+$U=\min(\tau/T,1)\Rightarrow\min(\mathrm{Exp}(4c),1)$ gives the mixture.
+
+Reduction to \texttt{TwoPhase.twophase\_mixture\_charFun\_tendsto}:
+\begin{itemize}
+\item[(1)] \underline{Discretization.} Partition $[0,T]$ into $k_n$ slices; the
+array is the sequence of compensated increments of $(X_1,X_2)$ over slices,
+normalized by $\sqrt{2T}$. Martingale-difference property: from the Markov
+property and the compensator of the jump process (drift $O(\eps)$ per unit
+time, total $O(c)=o(\sqrt T)$ --- the paper's computation; may enter the
+bundle).
+\item[(2)] \underline{Jump bound.} A slice increment is NOT deterministically
+bounded (multiple jumps per slice). Sanctioned devices, in order of
+preference: (a) the stopped/truncated array --- stop at the first slice
+containing more than one jump event; with total jump rate $\le\Lambda$ and
+$k_n\gg(\Lambda T)^2$, the stopped array differs from the true one with
+probability $\to0$, and its increments are bounded by
+$C/\sqrt{2T}\cdot(\text{max single-jump size})$; a charFun limit is unchanged
+by an event of vanishing probability. (b) If the process encoding makes even
+this awkward, the discretized-array properties (MDS, jump bound, bracket
+convergence) enter the named bundle \texttt{htwo} as a whole --- still a
+strict improvement over the current opaque \texttt{sorry}, and consistent
+with project convention. Do (a) if at all feasible; document precisely
+which route was taken.
+\item[(3)] \underline{Phase structure.} Pre-split the pair is locked
+($X_1=X_2$ increments identically --- state 3 moves as one particle: from the
+encoding or the bundle). Change point $=$ the slice containing $\tau$;
+$\tau/T\to U$ from \texttt{lem\_split} (already proved in the project ---
+reuse). Post-split brackets: diagonal $2(1+q^2)(T-\tau)/2T\to1-u$ each,
+cross bracket $\eps\Lambda_T/2T\to0$ --- the occupation bounds are
+\texttt{lem\_occ}/\texttt{lem\_rebind} content (proved; connect via
+Markov/Chebyshev from expectation bounds to the a.e./$L^1$ form the abstract
+theorem wants, or route through the bundle if the encodings mismatch).
+\item[(4)] \underline{Conclusion form.} Match the EXISTING Lean statements of
+\texttt{prop\_twophase}/\texttt{prop\_twophase\_mixture} exactly as far as
+possible. If they are stated as weak convergence in $\R^2$: either extend
+L\'evy continuity to $\R^2$ (the 1D proof in
+\texttt{TypeDDecouplingLevy.lean} is a template --- tightness componentwise
+from marginal charFuns, Prokhorov and \texttt{ext\_of\_charFun} are
+dimension-generic in Mathlib) in the bridge file, or, if the existing
+statement is charFun-level or hypothesis-styled, conclude at that level. A
+restatement that CHANGES mathematical content requires stopping at the
+bundle instead --- do not weaken statements silently; document any
+restatement in the docstring.
+\end{itemize}
+
+\begin{remark}[hygiene]
+(1) \texttt{lem\_split}, \texttt{lem\_occ}, \texttt{lem\_rebind},
+\texttt{expMin\_mean\_eq\_rhoCorr} are already proved in the project ---
+reuse, never re-prove. (2) The \texttt{htwo} bundle, if used, must be
+documented field-by-field in the docstring with the paper reference for each
+fact (the project's \texttt{hproc} style). (3) \texttt{thm\_cross} and any
+other consumer must still elaborate with, at most, the new bundle threaded
+through --- mirroring how \texttt{thm\_ewmain} threads \texttt{hconc}.
+(4) Report in the summary exactly which of (2a)/(2b) and which branch of (4)
+was taken, and whether the net term-level \texttt{sorry} count of the
+project dropped by two.
+\end{remark}
+
+\end{document}

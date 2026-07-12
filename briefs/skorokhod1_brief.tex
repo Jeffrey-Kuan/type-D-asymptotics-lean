@@ -1,0 +1,119 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
+\newcommand{\D}{\mathcal D}\newcommand{\norm}[1]{\lVert #1\rVert}
+
+\title{Formalization brief (Skorokhod campaign, 1 of $\sim$5):\\
+the space $D([0,T],\R)$ with the $J_1$ topology --- metric, completeness,
+Polishness}
+\date{8 July 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Campaign context.} This is the first of a planned series
+building the Skorokhod space in Lean, targeting ultimately Aldous's tightness
+criterion and Mitoma's theorem (the project's two remaining \texttt{sorry}s).
+Later tasks: compactness via the c\`adl\`ag modulus (2), tightness and Aldous
+(3), Polish-target generalization and pairings (4), Mitoma's reduction (5).
+DESIGN ACCORDINGLY: this file's definitions become load-bearing API. Document
+every design decision in the file header. New library-clean file (suggest
+\texttt{Skorokhod/Basic.lean} or \texttt{TypeDDecouplingSkorokhodBasic.lean});
+Mathlib imports only; do not modify any existing file; whole project must
+build; standard axioms only.
+
+\section*{Setting and definitions (Tier 0)}
+
+Fix $T>0$ (carry $T$ as a parameter; $[0,1]$ as a notation-simplifying default
+is acceptable if parameterization fights Mathlib, but prefer general $T$).
+\begin{itemize}
+\item \underline{C\`adl\`ag}: $f:[0,T]\to\R$ right-continuous on $[0,T)$ with
+left limits on $(0,T]$ (Mathlib: \texttt{nhdsWithin}-based; search for existing
+c\`adl\`ag/regulated predicates first). Define the type $\D_T$ (subtype or
+structure) of c\`adl\`ag functions.
+\item \underline{Time changes}: $\Lambda_T$ = strictly increasing continuous
+bijections $\lambda:[0,T]\to[0,T]$ with $\lambda(0)=0,\lambda(T)=T$, with the
+\underline{log-slope norm}
+$\norm\lambda^\circ:=\sup_{0\le s<t\le T}
+\big|\log\frac{\lambda(t)-\lambda(s)}{t-s}\big|$ (finite for the relevant
+$\lambda$; $\Lambda^\circ_T$ = those with finite norm --- a group under
+composition, with $\norm{\lambda^{-1}}^\circ=\norm\lambda^\circ$ and
+$\norm{\lambda\circ\mu}^\circ\le\norm\lambda^\circ+\norm\mu^\circ$: prove
+these).
+\item \underline{Billingsley's metric}:
+\[
+  d^\circ(f,g):=\inf_{\lambda\in\Lambda^\circ_T}
+  \max\big(\norm\lambda^\circ,\ \sup_{t}|f(\lambda(t))-g(t)|\big).
+\]
+\end{itemize}
+
+\section*{Tier 1: $d^\circ$ is a metric}
+
+Symmetry via $\lambda\mapsto\lambda^{-1}$; triangle via composition (using the
+group facts above); $d^\circ(f,g)=0\Rightarrow f=g$: from $d^\circ=0$ extract
+$\lambda_n$ with both terms $\to0$; conclude $f(t)=g(t)$ first at continuity
+points of $g$ (density of continuity points: the discontinuity set of a
+c\`adl\`ag function is countable --- prove this as a standalone lemma, it
+recurs), then everywhere by right-continuity. Provide the
+\texttt{MetricSpace} instance on $\D_T$ (quotient by nothing --- $d^\circ=0$
+implies equality on the nose).
+
+\section*{Tier 2: completeness (Billingsley Thm 12.2 --- the delicate one)}
+
+For a $d^\circ$-Cauchy sequence $(f_n)$: pass to a rapidly Cauchy subsequence
+($d^\circ(f_n,f_{n+1})<2^{-n}$ with witnesses $\mu_n$,
+$\norm{\mu_n}^\circ<2^{-n}$); form $\lambda_n:=\lim_{m}\mu_{n+m}\circ\cdots
+\circ\mu_n$ (uniform convergence of the compositions from the geometric
+log-slope bounds --- the key estimate: $\norm{\mu\circ\lambda-\lambda}_\infty$
+controlled by $\norm\mu^\circ$; prove carefully), so that
+$f_n\circ\lambda_n^{-1}$ is uniformly Cauchy; its uniform limit is c\`adl\`ag
+(uniform limits of c\`adl\`ag are c\`adl\`ag --- standalone lemma) and is the
+$d^\circ$-limit. Follow Billingsley \S12 closely; his lemmas 12.1--12.3 are
+the correct decomposition. This tier is the task's center of gravity ---
+budget accordingly.
+
+\section*{Tier 3: separability and Polishness; convergence API}
+
+\begin{itemize}
+\item[(a)] Separability: functions piecewise-constant on rational partitions
+with rational values are $d^\circ$-dense (approximate a c\`adl\`ag $f$ by its
+values on a fine partition; the c\`adl\`ag modulus argument in embryonic form
+--- keep the partition-approximation lemma reusable, Task 2 needs it).
+\item[(b)] The \texttt{PolishSpace} instance (Mathlib class; complete + separable
+metric).
+\item[(c)] Convergence API for later tasks: $f_n\to f$ in $d^\circ$ iff there
+exist $\lambda_n\in\Lambda^\circ_T$ with $\norm{\lambda_n}^\circ\to0$ and
+$\sup_t|f_n(\lambda_n(t))-f(t)|\to0$; uniform convergence implies $J_1$;
+evaluation $f\mapsto f(t)$ is continuous at every $f$ continuous at $t$;
+$f\mapsto\sup_t|f(t)|$ is continuous (or at least Borel --- whichever is
+cheap); constants embed isometrically.
+\end{itemize}
+
+\begin{remark}[hygiene and fallbacks]
+(1) Search Mathlib first: c\`adl\`ag/regulated functions, monotone bijections
+of intervals, \texttt{PolishSpace}, sup-norm machinery on
+\texttt{ContinuousMap}/bounded functions --- reuse aggressively.
+(2) Sanctioned fallbacks, in order: (i) $T=1$ fixed instead of general $T$;
+(ii) Tier 3(c) may deliver the ``if'' directions and defer the ``only if''
+(the $\lambda_n$-extraction) to Task 2 if it resists; (iii) if the
+completeness proof's composition-limit estimate genuinely resists, deliver
+Tiers 0--1 + Tier 3(a,b) for the SEPARABLE metric with completeness as the
+single documented residual --- but attempt Tier 2 seriously first; it is the
+raison d'\^etre of the log-slope norm.
+(3) NO probability in this task: pure topology/metric geometry. Measures
+arrive in Task 3.
+(4) Numerical sanity lemmas encouraged (distance between two unit-step
+functions with jump times $a\ne b$ is $\min(\cdots)$-type — catches definition
+errors early).
+(5) Report: tier coverage, design decisions (type of $\D_T$, how $\Lambda$ is
+encoded), and any Billingsley-gap discoveries (places where the informal proof
+needed repair — of independent interest).
+\end{remark}
+
+\end{document}
