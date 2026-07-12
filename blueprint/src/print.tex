@@ -1,17 +1,22 @@
-\documentclass[11pt]{report}
+% Printable version of the blueprint (structure follows the official template)
+\documentclass[a4paper]{report}
+
+\usepackage{geometry}
+
+\usepackage{expl3}
+
+\usepackage{amssymb, amsthm, mathtools}
+\usepackage[unicode,colorlinks=true,linkcolor=blue,urlcolor=magenta, citecolor=blue]{hyperref}
+
+\usepackage[warnings-off={mathtools-colon,mathtools-overbracket}]{unicode-math}
+
 \input{macros/common}
-\usepackage{amsmath,amssymb,amsthm}
 \input{macros/print}
-\usepackage[colorlinks]{hyperref}
-\newcommand{\lean}[1]{}
-\newcommand{\leanok}{}
-\newcommand{\uses}[1]{}
-\newcommand{\home}[1]{}
-\newcommand{\github}[1]{}
-\title{Correlated and uncorrelated long-time asymptotics of type D ASEP:\\ formalization blueprint}
+
+\title{Correlated and uncorrelated long-time asymptotics of type D ASEP: formalization blueprint}
 \author{Jeffrey Kuan}
+
 \begin{document}
 \maketitle
-\tableofcontents
 \input{content}
 \end{document}
