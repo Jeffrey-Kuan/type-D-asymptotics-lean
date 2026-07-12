@@ -1,68 +1,52 @@
-name: Build blueprint site
+name: Compile blueprint
+
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
   pages: write
   id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  issues: write
+  pull-requests: write
 
 jobs:
-  build:
+  build_project:
     runs-on: ubuntu-latest
+    name: Build project
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install elan
-        run: |
-          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
-      - name: Get Mathlib cache
-        run: lake exe cache get
-
-      - name: Build Lean project
-        run: lake build
-
-      - name: Install blueprint toolchain
-        run: |
-          sudo apt-get update && sudo apt-get install -y graphviz libgraphviz-dev
-          pip install 'pygraphviz==2.0' 'plasTeX==3.1' 'leanblueprint==0.0.20' 'plastexdepgraph==0.0.5' 'plastexshowmore==0.0.2'
-          pip list | grep -i -E 'plastex|blueprint'
-
-      - name: Build blueprint web version
-        run: |
-          set -o pipefail
-          cd blueprint/src
-          plastex -c plastex.cfg web.tex 2>&1 | tail -40
-          echo "--- output dir ---"
-          ls -la ../web | head -5
-
-      # v1: declaration checking is advisory; tighten once checkdecls is wired
-      - name: Check blueprint declarations (advisory)
-        continue-on-error: true
-        run: |
-          test -f blueprint/lean_decls && lake exe checkdecls blueprint/lean_decls || echo "checkdecls not wired yet (advisory)"
-
-      - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
         with:
-          path: blueprint/web
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Checkout project
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Build project
+        uses: leanprover/lean-action@434f25c2f80ded67bba02502ad3a86f25db50709 # 2025-07-02
+        with:
+          build: true
+          lint: false
+          mk_all-check: false
+
+      - name: Compile blueprint and deploy
+        uses: leanprover-community/docgen-action@deed0cdc44dd8e5de07a300773eb751d33e32fc8 # 2025-10-26
+        with:
+          blueprint: true
+          homepage: https://jeffrey-kuan.github.io/type-D-asymptotics-lean
