@@ -538,7 +538,7 @@ is proved in Lean from Mathlib primitives.
 \end{definition}
 
 \begin{theorem}[$D$ is a metric space under $d^\circ$]\label{thm:sk-metric}
-  \lean{SkorokhodBasic.dCirc_eq_zero, SkorokhodBasic.dCirc_triangle, SkorokhodBasic.instMetricSpaceSkoro}
+  \lean{SkorokhodBasic.dCirc_eq_zero, SkorokhodBasic.dCirc_triangle}
   \leanok
   \uses{def:sk-space, def:sk-dcirc, lem:sk-logslope}
   $d^\circ$ is symmetric, satisfies the triangle inequality (via the composition bound on
@@ -580,7 +580,7 @@ is proved in Lean from Mathlib primitives.
 \section{Completeness and Polishness}
 
 \begin{theorem}[Completeness and Polishness of $D$]\label{thm:sk-polish}
-  \lean{SkorokhodBasic.exists_limit_of_rapid, SkorokhodBasic.instCompleteSpaceSkoro, SkorokhodBasic.instSeparableSpaceSkoro, SkorokhodBasic.instPolishSpaceSkoro}
+  \lean{SkorokhodBasic.exists_limit_of_rapid}
   \leanok
   \uses{thm:sk-metric, def:sk-timechange, lem:sk-logslope, lem:sk-modulus-decay}
   Every rapidly Cauchy sequence ($d^\circ(u_k,u_{k+1})<2^{-k}$) converges: this is

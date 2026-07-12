@@ -71,15 +71,11 @@ SkorokhodBasic.supDiff
 SkorokhodBasic.dCirc
 SkorokhodBasic.dCirc_eq_zero
 SkorokhodBasic.dCirc_triangle
-SkorokhodBasic.instMetricSpaceSkoro
 SkorokhodBasic.modulusSet
 SkorokhodBasic.cadlagModulus
 SkorokhodBasic.IsCadlag.exists_modulus_partition
 SkorokhodBasic.cadlagModulus_tendsto_zero
 SkorokhodBasic.exists_limit_of_rapid
-SkorokhodBasic.instCompleteSpaceSkoro
-SkorokhodBasic.instSeparableSpaceSkoro
-SkorokhodBasic.instPolishSpaceSkoro
 SkorokhodBasic.totallyBounded_of_bdd_of_modulus
 SkorokhodBasic.isCompact_closure_of_bdd_of_modulus
 SkorokhodBasic.supNorm
