@@ -39,8 +39,11 @@ jobs:
 
       - name: Build blueprint web version
         run: |
+          set -o pipefail
           cd blueprint/src
           plastex -c plastex.cfg web.tex 2>&1 | tail -40
+          echo "--- output dir ---"
+          ls -la ../web | head -5
 
       # v1: declaration checking is advisory; tighten once checkdecls is wired
       - name: Check blueprint declarations (advisory)
