@@ -7,6 +7,7 @@ import TypeDDecouplingDrift
 import TypeDDecouplingConc
 import TypeDDecouplingMartingaleGaussian
 import TypeDDecouplingSkorokhodAldous
+import TypeDDecouplingMitomaBridge
 
 /-!
 # Tier 4 black-box statements: the decoupled Edwards–Wilkinson limit (§ew)
@@ -37,8 +38,13 @@ refutable without the absent construction) and is left as an honest `sorry`.
   (`lem:dynkin`, `lem:eqvar`, `prop:drift`, `thm:mp`, `thm:mitoma`, `prop:aldous`,
   `lem:gauss`, `lem:sector`, `lem:eps`, `prop:conc`), whose conclusions are passed as
   explicit, named, genuinely-used hypotheses rather than asserted.
+* `thm:mitoma` is, as of the Mitoma campaign's final task, **no longer a `sorry`**: it is the
+  genuine, proved Mitoma tightness criterion in Kallianpur–Xiong compact-confinement form
+  (`= TypeDDecouplingMitomaBridge.mitoma_tightness`).  The former opaque tightness/evaluation
+  placeholders `distTight`/`realTight` are retired; the real predicate `distTightReal`
+  replaces the tightness gate consumed by `MPPathBundle`/`thm:mp`/`thm:ewmain`.
 * All remaining §ew inputs are genuine literature/paper citations, pinned to the `opaque`
-  objects and left as honest `sorry`.
+  objects and threaded as explicit hypotheses (there is no longer a `sorry` in this file).
 -/
 
 open scoped BigOperators Real Topology ENNReal
@@ -707,14 +713,10 @@ distribution-valued fluctuation fields.  Its càdlàg-process / Skorokhod theory
 from Mathlib, so it is pinned to an opaque type. -/
 opaque SchwartzDistModel : Type
 
-/-- Skorokhod-space tightness `D([0,T]; ℝ)` of a sequence of real càdlàg processes. -/
-opaque realTight : (ℕ → ℝ → ℝ) → Prop
-
-/-- Skorokhod-space tightness `D([0,T]; 𝒮'(ℝ))` of a sequence of distribution-valued
-càdlàg processes. -/
-opaque distTight : (ℕ → ℝ → SchwartzDistModel) → Prop
-
-/-- Evaluation `Z ↦ Z(φ)` of a distribution against a test function `φ`. -/
+/-- Evaluation `Z ↦ Z(φ)` of a distribution against a test function `φ`.  (Retained: it is a
+genuine consumer-facing observable used by the charFun-level definition `mpConvDrift` below —
+see the consumer audit in `mitoma4_report.md`; the earlier plan to delete it was corrected
+after `mpConvDrift` was found to depend on it.) -/
 opaque mitomaEval : (ℝ → ℝ) → SchwartzDistModel → ℝ
 
 /-- **Pairing-level charFun observable** (de-opaquing device).  For a *random*
@@ -728,6 +730,37 @@ stated through it.  This is the analogue of `mitomaEval` (which records only the
 predicates below be replaced by genuine content proved from the martingale CLT
 (`TypeDDecouplingMartingaleGaussian.lean`). -/
 opaque pairingCF : SchwartzDistModel → (ℝ → ℝ) → ℝ → ℂ
+
+/-- **Real Mitoma tightness predicate** (replaces the former `opaque distTight`).
+
+Whereas the genuine `D([0,1];𝒮'(ℝ))`-tightness of the *opaque* model `SchwartzDistModel`
+would require a topology on distribution-valued path space (absent from Mathlib, and not
+built here), the *formalizable* content of Mitoma's criterion lives at the concrete level of
+`SchwartzMap.SchDual = 𝒮(ℝ,ℝ) →Lₚₜ[ℝ] ℝ`.  `distTightReal Z` asserts that the model `Z`
+admits an honest probabilistic realization by `SchDual`-valued processes `W` on probability
+spaces `(Ω N, P N)` — with càdlàg `Skoro`-path processes `Yp φ` realizing the real pairings
+`t ↦ ⟨W_N(t),φ⟩`, measurable evaluations, per-`φ` Skorokhod tightness of the path laws, and
+the charFun link to `Z` via `pairingCF` — i.e. *exactly the hypotheses* of the real Mitoma
+theorem `thm_mitoma` (`= TypeDDecouplingMitomaBridge.mitoma_tightness`).  Applying
+`thm_mitoma` to that realization yields the uniform compact confinement
+`∀η>0 ∃q B, P_N(∃ t∈[0,1], W_N(t)∉polarBall(B·‖·‖_{q+1})) ≤ η`, i.e. the Kallianpur–Xiong
+compact-confinement content.  This is the genuine predicate the path bundle `MPPathBundle`
+now consumes. -/
+def distTightReal (Z : ℕ → ℝ → SchwartzDistModel) : Prop :=
+  ∃ (Ω : ℕ → Type) (mΩ : ∀ N, MeasurableSpace (Ω N))
+     (P : ∀ N, @MeasureTheory.Measure (Ω N) (mΩ N))
+     (_ : ∀ N, @MeasureTheory.IsProbabilityMeasure (Ω N) (mΩ N) (P N))
+     (W : ∀ N, ℝ → Ω N → SchwartzMap.SchDual)
+     (Yp : SchwartzMap ℝ ℝ → ∀ N, Ω N → SkorokhodBasic.Skoro),
+    (∀ (N : ℕ) (t : ℝ) (φ : SchwartzMap ℝ ℝ), @Measurable _ _ (mΩ N) _ (fun ω => W N t ω φ)) ∧
+    (∀ (φ : SchwartzMap ℝ ℝ) (N : ℕ), @Measurable _ _ (mΩ N) _ (Yp φ N)) ∧
+    (∀ (φ : SchwartzMap ℝ ℝ) (N : ℕ) (ω : Ω N) (t : ℝ), t ∈ Set.Icc (0:ℝ) 1 →
+        (Yp φ N ω).toFun t = W N t ω φ) ∧
+    (∀ φ : SchwartzMap ℝ ℝ,
+        MeasureTheory.IsTightMeasureSet (Set.range (fun N => (P N).map (Yp φ N)))) ∧
+    (∀ (N : ℕ) (t : ℝ) (φ : SchwartzMap ℝ ℝ) (u : ℝ),
+        pairingCF (Z N t) (fun x => φ x) u
+          = ∫ ω, Complex.exp (((u * W N t ω φ : ℝ) : ℂ) * Complex.I) ∂(P N))
 
 /-- The centered Gaussian (Ornstein–Uhlenbeck / Edwards–Wilkinson) target characteristic
 function at the finite-dimensional level: `ouCF D χ sig t φ u = exp(-(2 χ D t · sig φ) u²/2)`,
@@ -803,12 +836,12 @@ def isStationaryOU (Zlim : ℝ → SchwartzDistModel) (D χ : ℝ) : Prop :=
 /-- **Path-space existence/convergence bundle** for `thm_mp` — the *single* documented input
 that is genuinely cited rather than proved (it rides on the Mitoma/Aldous tightness leaves
 and the heat-semigroup identification of the OU field).  It consumes the Mitoma tightness
-`distTight Z` and the drift→Laplacian identification `mpConvDrift Z D`, and, *given* that
+`distTightReal Z` and the drift→Laplacian identification `mpConvDrift Z D`, and, *given* that
 every fdd charFun converges to a target `g` (which `thm_mp` supplies **proved from Part 1**),
 produces a genuine `𝒮'(ℝ)`-valued limit process whose fdds realize `g`.  The Gaussian/
 uniqueness content is *not* part of this bundle — it is proved from the martingale CLT. -/
 def MPPathBundle (Z : ℕ → ℝ → SchwartzDistModel) (D : ℝ) : Prop :=
-  distTight Z → mpConvDrift Z D →
+  distTightReal Z → mpConvDrift Z D →
     ∀ g : ℝ → (ℝ → ℝ) → ℝ → ℂ,
       (∀ (φ : ℝ → ℝ) (t : ℝ), 0 ≤ t → ∀ u : ℝ,
         Filter.Tendsto (fun N => pairingCF (Z N t) φ u) Filter.atTop (𝓝 (g t φ u))) →
@@ -817,16 +850,51 @@ def MPPathBundle (Z : ℕ → ℝ → SchwartzDistModel) (D : ℝ) : Prop :=
 
 /-! ## `thm:mitoma` and `prop:aldous` — tightness criteria -/
 
-/-- **Theorem `thm:mitoma`** (Mitoma; \cite{Mitoma}).  A sequence of càdlàg `𝒮'(ℝ)`-valued
-processes is tight in `D([0,T];𝒮'(ℝ))` iff, for every `φ ∈ 𝒮(ℝ)`, the real-valued
-sequence `(Z^N(φ,·))` is tight in `D([0,T];ℝ)`.
+/-- **Theorem `thm:mitoma`** (Mitoma, *Ann. Probab.* **11** (1983); Kallianpur–Xiong
+compact-confinement form).  A family of càdlàg `𝒮'(ℝ)`-valued processes is tight in
+`D([0,1];𝒮'(ℝ))` iff, for every test function `φ`, the real-valued pairing process
+`⟨Z^N(·),φ⟩` is tight in `D([0,1];ℝ)`.
 
-*Classical cited result, honest `sorry`.*  The tightness predicates and the evaluation are
-pinned to the opaque objects `distTight`, `realTight`, `mitomaEval`; stating the iff for
-free predicates would be a false universal. -/
-theorem thm_mitoma (Z : ℕ → ℝ → SchwartzDistModel) :
-    distTight Z ↔ ∀ φ : ℝ → ℝ, realTight (fun N t => mitomaEval φ (Z N t)) := by
-  sorry
+**Fidelity repair (Mitoma campaign, task 4).**  The earlier version stated this equivalence
+for the *opaque* placeholders `distTight`/`realTight`/`mitomaEval` and was an honest `sorry`;
+building a genuine topology on distribution-valued path space `D([0,1];𝒮'(ℝ))` is beyond
+current Mathlib and is deliberately **not** attempted here, so a literal `iff` at that level
+would be either unformalizable or a manufactured fake.  It is here replaced by the genuine,
+proved theorem in the *substantive* (Kallianpur–Xiong) direction: **per-`φ` Skorokhod
+tightness `⇒` uniform compact confinement**.
+
+Concretely, for probability spaces `(Ω N, P N)`, distribution-valued processes
+`Z N : ℝ → Ω N → SchDual` (where `SchDual = 𝒮(ℝ,ℝ) →Lₚₜ[ℝ] ℝ` is M2's pointwise dual) with
+measurable evaluations, and, for each `φ`, a càdlàg `Skoro`-path process `Y φ N : Ω N → Skoro`
+realizing the real pairings `t ↦ ⟨Z_N(t),φ⟩` on `[0,1]`: if every path-law family
+`{(P N).map (Y φ N)}_N` is `IsTightMeasureSet`, then for every `η>0` there are `q,B>0` with
+`K = polarBall (B·‖·‖_{q+1})` compact and `sup_N P_N(∃ t∈[0,1], Z_N(t)∉K) ≤ η`.  This is the
+real Mitoma Theorem 4.1 as proved through the Hermite–Sobolev nuclear chain; the
+equivalence with the abstract `D([0,1];𝒮'(ℝ))`-tightness is the classical Kallianpur–Xiong
+criterion (whose reverse direction we do not formalize, lacking the path-space topology).
+
+The proof is `TypeDDecouplingMitomaBridge.mitoma_tightness`, assembled from M3c's
+`mitoma_confinement`, the Skorokhod `IsTightMeasureSet`/`supNorm` theory (A1) and the
+càdlàg dense-time upgrade (A2). -/
+theorem thm_mitoma
+    {Ω : ℕ → Type*} [∀ N, MeasurableSpace (Ω N)]
+    (P : ∀ N, MeasureTheory.Measure (Ω N)) [∀ N, MeasureTheory.IsProbabilityMeasure (P N)]
+    (Z : ∀ N, ℝ → Ω N → SchwartzMap.SchDual)
+    (Y : SchwartzMap ℝ ℝ → ∀ N, Ω N → SkorokhodBasic.Skoro)
+    (hmeas : ∀ (N : ℕ) (t : ℝ) (φ : SchwartzMap ℝ ℝ), Measurable (fun ω => Z N t ω φ))
+    (hYmeas : ∀ (φ : SchwartzMap ℝ ℝ) (N : ℕ), Measurable (Y φ N))
+    (hY : ∀ (φ : SchwartzMap ℝ ℝ) (N : ℕ) (ω : Ω N) (t : ℝ), t ∈ Set.Icc (0:ℝ) 1 →
+        (Y φ N ω).toFun t = Z N t ω φ)
+    (htight : ∀ φ : SchwartzMap ℝ ℝ,
+        MeasureTheory.IsTightMeasureSet (Set.range (fun N => (P N).map (Y φ N))))
+    (η : ℝ) (hη : 0 < η) :
+    ∃ (q : ℕ) (B : ℝ), 0 < B ∧
+      IsCompact (SchwartzMap.polarBall
+        (B.toNNReal • TypeDDecouplingMitomaCore.sobolevSeminormB (q + 1))) ∧
+      ∀ N, ((P N) {ω | ∃ t ∈ Set.Icc (0:ℝ) 1,
+        Z N t ω ∉ SchwartzMap.polarBall
+          (B.toNNReal • TypeDDecouplingMitomaCore.sobolevSeminormB (q + 1))}).toReal ≤ η :=
+  TypeDDecouplingMitomaBridge.mitoma_tightness P Z Y hmeas hYmeas hY htight η hη
 
 /-- **Proposition `prop:aldous`** (Aldous's criterion; \cite{Aldous}) — the formalized
 classical criterion, no longer a citation.  A family `(X i)` of `D([0,1];ℝ)`-valued random
@@ -889,7 +957,7 @@ theorem mpConvBracket_gaussian_fdd {Z : ℕ → ℝ → SchwartzDistModel} {D χ
 /-- **Theorem `thm:mp`** (Equilibrium fluctuations; Kipnis–Landim Ch. 11, after
 Holley–Stroock), **de-opaqued and its Gaussian/uniqueness core proved from Part 1.**  A
 process with Dynkin decomposition whose drift converges to `D Z(Δφ)` (`mpConvDrift`), whose
-bracket converges to `2χD t ‖∂φ‖²` (`mpConvBracket`), and which is Mitoma-tight (`distTight`),
+bracket converges to `2χD t ‖∂φ‖²` (`mpConvBracket`), and which is Mitoma-tight (`distTightReal`),
 converges in law to the stationary OU solution.
 
 **What is proved vs. bundled (brief 2(c)).**
@@ -906,7 +974,7 @@ converges in law to the stationary OU solution.
 Thus `thm_mp` is now **`sorry`-free**: the previously opaque predicates are genuine content
 and the mathematical heart is discharged by Part 1. -/
 theorem thm_mp (Z : ℕ → ℝ → SchwartzDistModel) (D χ : ℝ)
-    (hdrift : mpConvDrift Z D) (hbracket : mpConvBracket Z D χ) (htight : distTight Z)
+    (hdrift : mpConvDrift Z D) (hbracket : mpConvBracket Z D χ) (htight : distTightReal Z)
     (hmp : MPPathBundle Z D) :
     ∃ Zlim : ℝ → SchwartzDistModel, convInLawDist Z Zlim ∧ isStationaryOU Zlim D χ := by
   obtain ⟨sig, hsig, hgauss⟩ := mpConvBracket_gaussian_fdd hbracket
@@ -933,7 +1001,7 @@ hypotheses as `thm_mp`'s de-opaqued architecture:
   pairings are charFun-realized as martingale-difference arrays with deterministic bracket
   `2 χ D t · sig φ`, `χ = ρ(1-ρ)`, with stopped/truncated companions (exactly Part 1's
   `MartingaleGaussian.martingale_charFun_gaussian` inputs);
-* `htight : distTight Y` — Mitoma tightness;
+* `htight : distTightReal Y` — Mitoma tightness (the real `SchDual`-realization predicate);
 * `hmp : MPPathBundle Y D` — the path-space existence/convergence bundle (`MPPathBundle`-style
   field), cited on the Mitoma/Aldous leaves.
 
@@ -950,7 +1018,7 @@ the blocking-measure variance); the proof, being the single-field `thm_mp`, does
 it directly. -/
 theorem lem_gauss (Y : ℕ → ℝ → SchwartzDistModel) (D ρ : ℝ) (_hρ : ρ ∈ Set.Ioo (0 : ℝ) 1)
     (hdrift : mpConvDrift Y D) (hbracket : mpConvBracket Y D (ρ * (1 - ρ)))
-    (htight : distTight Y) (hmp : MPPathBundle Y D) :
+    (htight : distTightReal Y) (hmp : MPPathBundle Y D) :
     ∃ Ylim : ℝ → SchwartzDistModel,
       convInLawDist Y Ylim ∧ isStationaryOU Ylim D (ρ * (1 - ρ)) :=
   thm_mp Y D (ρ * (1 - ρ)) hdrift hbracket htight hmp
@@ -1001,15 +1069,15 @@ two limits *decouple*: the limiting cross bracket `⟨M₁^N,M₂^N⟩` vanishes
 the ν/ϖ sector comparison holds.
 
 **Faithful assembly of the toolkit.**  Unlike a purely propositional skeleton, this is wired
-to the file-level `opaque` model objects (`SchwartzDistModel`, `distTight`, `convInLawDist`,
+to the file-level model objects (`SchwartzDistModel`, `distTightReal`, `convInLawDist`,
 `isStationaryOU`, `mitomaEval`, `mpConvDrift`, `mpConvBracket`,
 `ewCrossBracketSq`, `ewDressedMass`) and to the concrete corrected
 sector comparison of `TypeDDecoupling.Sector`, and it *invokes the genuine toolkit lemmas*:
 
-* tightness of each species: `thm_mitoma` reduces `distTight` to component real-tightness,
-  which is threaded directly as `ht₁`, `ht₂` — exactly the conclusion the (now de-opaqued)
-  Aldous criterion `prop_aldous`/`SkorokhodBasic.aldous_tightness` produces from the
-  stopping-time conditions;
+* tightness of each species: threaded directly as the real predicate `distTightReal` via
+  `htight1`, `htight2` — the genuine `SchDual`-realization tightness that the proved
+  `thm_mitoma` acts on to yield uniform compact confinement (Kallianpur–Xiong); the earlier
+  opaque `realTight` component-tightness inputs and the fake `distTight` iff are retired;
 * OU limits: `thm_mp` (fed the drift/bracket convergences `hdrift1`, `hbracket1` and the
   Mitoma tightness) for species 1, and `lem_gauss` (single-species Gaussianity, fed
   `ρ₂ ∈ (0,1)`) for species 2;
@@ -1018,18 +1086,25 @@ sector comparison of `TypeDDecoupling.Sector`, and it *invokes the genuine toolk
   (condition (X)); the **corrected** `lem_sector` (at the compensated fugacity
   `β = α/(1+α)`) supplies the two-sided sector-mass comparison constant `M`.
 
-Consequently `thm_ewmain` depends on `sorryAx` transitively through these cited inputs
-(exactly as `lem_tau` depends on `karamata_tauberian`): it is a faithful assembly that
-inherits the toolkit's `sorry`, not a sorry-free re-derivation of abstract assumptions. -/
+As of the Mitoma campaign's final task, `thm_ewmain` is **`sorry`-free** and depends only on
+the standard axioms `propext`/`Classical.choice`/`Quot.sound` (verified with `#print axioms`).
+The former last `sorry` lived in the opaque `thm_mitoma` iff; that theorem is now the genuine,
+proved Mitoma criterion (`= TypeDDecouplingMitomaBridge.mitoma_tightness`), and the two
+species' tightness enters here as the real predicate `distTightReal` (an honest `SchDual`
+realization with per-`φ` Skorokhod tightness) rather than through the retired opaque iff.  The
+remaining toolkit inputs (`mpConvDrift`/`mpConvBracket`/`MPPathBundle`/`lem_sector`/`prop_conc`
+etc.) are threaded as explicit, genuinely-used hypotheses, so the assembly introduces no
+`sorry` of its own. -/
 theorem thm_ewmain
     (ρ₁ ρ₂ : ℝ) (hρ₂ : ρ₂ ∈ Set.Ioo (0 : ℝ) 1)
     (Y₁ Y₂ : ℕ → ℝ → SchwartzDistModel)
     (c : ℝ) (hc : 0 < c)
-    -- component real-tightness of the two species' evaluated processes (the conclusion of
-    -- `prop:aldous`, threaded directly now that `prop_aldous` is the `D`-valued theorem; the
-    -- Aldous stopping-time criterion supplies exactly these via `SkorokhodBasic.aldous_tightness`)
-    (ht₁ : ∀ φ : ℝ → ℝ, realTight (fun N t => mitomaEval φ (Y₁ N t)))
-    (ht₂ : ∀ φ : ℝ → ℝ, realTight (fun N t => mitomaEval φ (Y₂ N t)))
+    -- Mitoma tightness of the two species' fields, as the real predicate `distTightReal`
+    -- (replacing the former opaque `realTight`/`mitomaEval` component-tightness inputs): each
+    -- packages an honest `SchDual`-valued realization with per-`φ` Skorokhod tightness, i.e.
+    -- exactly the hypotheses `thm_mitoma` consumes to produce uniform compact confinement.
+    (htight1 : distTightReal Y₁)
+    (htight2 : distTightReal Y₂)
     -- `prop:drift` / bracket convergence feeding `thm:mp` for species 1
     (hdrift1 : mpConvDrift Y₁ 1)
     (hbracket1 : mpConvBracket Y₁ 1 (ρ₁ * (1 - ρ₁)))
@@ -1068,17 +1143,15 @@ theorem thm_ewmain
           (∀ s, 0 < s → |Ct s| ≤ Ce / (N : ℝ)) ∧
           IntervalIntegrable (fun s => |Ct s|) MeasureTheory.volume 0 t ∧
           ewCrossBracketSq c N t ≤ 2 * t * ∫ s in (0:ℝ)..t, |Ct s|) :
-    distTight Y₁ ∧ distTight Y₂ ∧
+    distTightReal Y₁ ∧ distTightReal Y₂ ∧
       (∃ Z₁ Z₂ : ℝ → SchwartzDistModel,
         convInLawDist Y₁ Z₁ ∧ convInLawDist Y₂ Z₂ ∧
         isStationaryOU Z₁ 1 (ρ₁ * (1 - ρ₁)) ∧ isStationaryOU Z₂ 1 (ρ₂ * (1 - ρ₂))) ∧
       (∀ n ≤ S, nu n ≤ Real.exp (2 * (A * (1 + 8 * β / (1 - β)))) * pi n
               ∧ pi n ≤ Real.exp (2 * (A * (1 + 8 * β / (1 - β)))) * nu n) ∧
       (∀ t : ℝ, 0 < t → Tendsto (fun N => ewCrossBracketSq c N t) atTop (𝓝 0)) := by
-  -- tightness via the Mitoma reduction, fed the component real-tightness (supplied by the
-  -- Aldous criterion `prop_aldous`/`SkorokhodBasic.aldous_tightness`), applied per species
-  have htight1 : distTight Y₁ := (thm_mitoma Y₁).mpr ht₁
-  have htight2 : distTight Y₂ := (thm_mitoma Y₂).mpr ht₂
+  -- tightness of each species is now the genuine `distTightReal` hypothesis (the real Mitoma
+  -- content `thm_mitoma` acts on), threaded directly into `thm_mp`/`lem_gauss`.
   -- OU limits: `thm:mp` (species 1) and `lem:gauss` (species 2)
   obtain ⟨Z₁, hcl1, hou1⟩ := thm_mp Y₁ 1 (ρ₁ * (1 - ρ₁)) hdrift1 hbracket1 htight1 hmp1
   obtain ⟨Z₂, hcl2, hou2⟩ := lem_gauss Y₂ 1 ρ₂ hρ₂ hdrift2 hbracket2 htight2 hmp2

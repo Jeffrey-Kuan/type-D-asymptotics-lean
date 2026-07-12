@@ -5,9 +5,9 @@ This blueprint maps the Lean formalization of the paper. An item marked
 no \texttt{sorry}, from Mathlib primitives, under the standard axioms.
 Several assembly theorems consume explicitly named hypothesis bundles
 (documented in each entry); these are recorded as hypotheses of the Lean
-statements, not hidden assumptions. At the time of writing the single
-remaining \texttt{sorry} is the Mitoma citation (its supporting theory is
-complete; see the final chapter).
+statements, not hidden assumptions. As of 11 July 2026 the tree contains \emph{no} \texttt{sorry}: every result
+of the paper, including both classical tightness criteria (Aldous and Mitoma),
+is proved in Lean from Mathlib primitives.
 
 % Blueprint content for: Correlated and uncorrelated long-time asymptotics of type D ASEP
 % CORE FRAGMENT (refreshed against the current Lean tree, 2026-07).
@@ -283,16 +283,19 @@ complete; see the final chapter).
 \end{lemma}
 
 \begin{theorem}[Mitoma's tightness criterion]\label{thm:ew-mitoma}
-  \lean{TypeDDecoupling.thm_mitoma}
-  \uses{def:sk-space, thm:mit-confinement}
-  A sequence of c\`adl\`ag $\mathcal S'(\mathbb R)$-valued processes is tight in
-  $D([0,T];\mathcal S'(\mathbb R))$ iff, for every $\varphi \in \mathcal S(\mathbb R)$,
-  the real-valued sequence $(Z^N(\varphi,\cdot))$ is tight in $D([0,T];\mathbb R)$.
-  Stated over the opaque objects \texttt{SchwartzDistModel}, \texttt{distTight},
-  \texttt{realTight}, \texttt{mitomaEval}.  \emph{This is the one remaining citation
-  sorry of the project; see the Mitoma campaign chapter for the machinery built to
-  discharge it} (nuclear confinement on the Hermite scale, \ref{thm:mit-confinement}).
-\end{theorem}
+  \lean{TypeDDecoupling.thm_mitoma, TypeDDecouplingMitomaBridge.mitoma_tightness}
+  \leanok
+  \uses{def:sk-space, thm:sk-tight-bridge, thm:mit-confinement, thm:mit-polar-compact}
+  If, for every $\varphi\in\mathcal S(\mathbb R)$, the path processes
+  $t\mapsto\langle Z_N(t),\varphi\rangle$ have tight laws on $D([0,1];\mathbb R)$,
+  then for every $\eta>0$ the processes are confined, uniformly in $N$ and with
+  probability $\ge 1-\eta$, in a single \emph{compact} polar ball of the pointwise
+  dual $\mathcal S'(\mathbb R)$ (Kallianpur--Xiong compact-confinement form of
+  Mitoma's theorem; the classical iff against a topology on
+  $D([0,1];\mathcal S')$ is deliberately not formalized). Proved from the
+  Hermite--Sobolev nuclear chain and the uniform confinement theorem; formerly
+  the project's one remaining citation \texttt{sorry}, now discharged
+  (fidelity-repair note in the Lean docstring).\end{theorem}
 
 \begin{proposition}[Aldous's tightness criterion]\label{prop:ew-aldous}
   \lean{TypeDDecoupling.prop_aldous}

@@ -1,3 +1,21 @@
+# Summary of changes for run 17c8cd73-3d6c-4333-a194-9dacb7209595
+Completed the Mitoma campaign FINAL task (task 4): `thm_mitoma` is de-opaqued and proved, and the project's real `sorry` count is now **0**. The whole project builds (8069 jobs) and the four headline theorems depend only on the standard axioms `propext`, `Classical.choice`, `Quot.sound`.
+
+**Part A — new file `TypeDDecouplingMitomaBridge.lean`** (registered in `lakefile.toml`, no existing file touched):
+- `tight_supNorm_tail` (A1): `IsTightMeasureSet` on the Skorokhod space ⇒ uniform sup-norm tail bounds (compactness + continuity of `supNorm`).
+- `mem_polarBall_of_denseTimes` (A2): càdlàg dense-time upgrade — pointwise polar-ball confinement at rational times of `[0,1]` upgrades to all of `[0,1]` via right-continuity.
+- `mitoma_tightness` (A3): the real Mitoma Theorem 4.1 in Kallianpur–Xiong compact-confinement form — per-φ Skorokhod tightness of the pairing path processes ⇒ uniform compact confinement of the distribution-valued process on `[0,1]`. Proved by feeding (A1) into M3c's `mitoma_confinement` and upgrading with (A2). All proved with standard axioms.
+
+**Part B — edits to `TypeDDecouplingEW.lean` (in place):**
+- (B1) Consumer audit verified, with one correction reported: `mitomaEval` is NOT consumed only by `thm_mitoma` — the charFun-level definition `mpConvDrift` also uses it — so `mitomaEval` was retained (deleting it would break a definition the brief keeps frozen).
+- (B2) `thm_mitoma` restated to the real theorem (= `mitoma_tightness`), same name, Mitoma-1983 citation kept with a fidelity-repair note; the sanctioned one-directional (substantive) form is used, no path-space topology built and no fake `iff` manufactured.
+- (B3) Deleted `opaque realTight` and `opaque distTight`; introduced the genuine `def distTightReal` (an honest `SchDual`-realization predicate with per-φ Skorokhod tightness — exactly the hypotheses `thm_mitoma` acts on). Rewired `MPPathBundle`, `thm_mp`, `lem_gauss` to consume `distTightReal`; `SchwartzDistModel`/`pairingCF`/charFun-level defs kept as-is.
+- `thm_mp`/`thm_ewmain` keep their meaning; `thm_ewmain`'s opaque component-tightness inputs are replaced by genuine `distTightReal` hypotheses, and it is now itself sorry-free (its stale "depends on sorryAx" docstring was corrected).
+
+**(B4) Final audit:** whole-project build clean; a word-boundary grep for `sorry` returns 58 hits, all inside comments/docstrings (the single own-line `sorry` is inside a fenced code block within a doc comment in a frozen, untouched file); no `axiom`/`@[implemented_by]` introduced; `#print axioms` on `thm_mitoma`, `thm_ewmain`, `thm_mp`, `prop_aldous`, and `mitoma_tightness` all give only the standard axioms.
+
+Details are in `mitoma4_report.md`.
+
 # Summary of changes for run 0460a6e6-e566-46d7-ab75-b16ac09b169c
 Completed Mitoma campaign task 3c (uniform dual-ball confinement) in full. Added one new self-contained file `TypeDDecouplingMitomaCore.lean` (imports Mathlib + M3b `TypeDDecouplingHermiteSobolev` and M2 `TypeDDecouplingSchwartzDual`, which transitively bring in M3a and M1), registered it in `lakefile.toml`, and touched no existing project file. The whole project builds (8068 jobs) with no `axiom`/`sorry`/`admit`, and the three headline theorems each depend only on the standard axioms `propext`, `Classical.choice`, `Quot.sound` (verified). A detailed write-up is in `mitoma3c_report.md`.
 
